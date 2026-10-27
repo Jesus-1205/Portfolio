@@ -1,1 +1,52 @@
 @import "tailwindcss";
+
+/* ═══════════════════════════════════════════════
+   1.1 Design Tokens — Engineered Dark
+   ═══════════════════════════════════════════════ */
+:root {
+  /* Lienzo y Superficies */
+  --bg-canvas: #09090b;
+  --bg-surface: #121215;
+  --bg-surface-subtle: #18181b;
+
+  /* Bordes de Definición */
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.22);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+
+  /* Jerarquía de Texto */
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+
+  /* Acentos Semánticos de Ingeniería */
+  --accent-emerald: #10b981;
+  --accent-sky: #38bdf8;
+  --accent-indigo: #818cf8;
+  --accent-amber: #f59e0b;
+}
+
+/* ═══════════════════════════════════════════════
+   Scroll Suave Global
+   ═══════════════════════════════════════════════ */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ═══════════════════════════════════════════════
+   7.2 Animación de Entrada en Scroll
+   ═══════════════════════════════════════════════ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal-on-scroll {
+  animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
