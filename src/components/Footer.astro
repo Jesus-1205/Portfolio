@@ -15,40 +15,41 @@
       </p>
     </div>
 
-    <!-- Lado Derecho: Enlaces rápidos & Scroll to Top -->
+    <!-- Lado Derecho: Enlaces rápidos & Back to Top -->
     <div class="flex flex-wrap items-center justify-center gap-4 text-neutral-400">
-      <a
-        href="#proyectos"
-        class="hover:text-white transition-colors duration-150"
-      >
+      <a href="#proyectos" class="hover:text-white transition-colors duration-150">
         #proyectos
       </a>
-      <a
-        href="#habilidades"
-        class="hover:text-white transition-colors duration-150"
-      >
+      <a href="#habilidades" class="hover:text-white transition-colors duration-150">
         #habilidades
       </a>
-      <a
-        href="#certificaciones"
-        class="hover:text-white transition-colors duration-150"
-      >
+      <a href="#certificaciones" class="hover:text-white transition-colors duration-150">
         #certificaciones
       </a>
-      <a
-        href="#experiencia"
-        class="hover:text-white transition-colors duration-150"
-      >
+      <a href="#experiencia" class="hover:text-white transition-colors duration-150">
         #experiencia
       </a>
       <span class="text-neutral-700 select-none" aria-hidden="true">·</span>
-      <a
-        href="#"
-        class="text-neutral-300 hover:text-white transition-colors duration-150 inline-flex items-center gap-1"
+      <button
+        type="button"
+        id="back-to-top"
+        class="text-neutral-300 hover:text-white transition-colors duration-150 cursor-pointer inline-flex items-center gap-1 bg-transparent border-none p-0 font-mono text-xs"
+        style={`font-family: var(--font-mono)`}
       >
         <span>Volver arriba</span>
         <span aria-hidden="true">&uarr;</span>
-      </a>
+      </button>
     </div>
   </div>
 </footer>
+
+<script>
+  const setupBackToTop = () => {
+    const btn = document.getElementById("back-to-top");
+    btn?.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  };
+  setupBackToTop();
+  document.addEventListener("astro:page-load", setupBackToTop);
+</script>
