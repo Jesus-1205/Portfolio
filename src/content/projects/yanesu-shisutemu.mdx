@@ -1,0 +1,74 @@
+---
+title: "Yanesu Shisutemu"
+tagline: "Arquitectura de un POS & ERP Transaccional Bimoneda de Alta Disponibilidad"
+clientOrContext: "Retail de Bebidas y Licores (Distribución al Detal y al Mayor)"
+timeframe: "Jul 2026 – Presente"
+productionStatus: "Producción Activa"
+role: "Full-Stack Software Developer & Systems Architect"
+slug: "yanesu-shisutemu"
+
+heroMetrics:
+  - label: "Latencia Promedio"
+    value: "63.04 ms"
+    detail: "-65.8% de reducción de tiempo frente al MVP (2.92x más rápido)"
+  - label: "Carga de Red"
+    value: "26.80 KB"
+    detail: "-76.3% de payload transferido en consultas críticas"
+  - label: "Suite de Calidad"
+    value: "2.662 Tests"
+    detail: "100% pasando (972 en Pytest + 1.690 en Vitest)"
+  - label: "Reconocimiento OSS"
+    value: "XERJ Corpus Hub"
+    detail: "Código de seed & testing indexado como referencia para agentes de IA (+16k ⭐ en GitHub)"
+
+stack:
+  frontend:
+    - "React 19.2"
+    - "TypeScript 5.7"
+    - "Tailwind CSS v4.3"
+    - "Zustand 5.0"
+    - "Vite 6"
+  backend:
+    - "Python 3.12"
+    - "FastAPI 0.115"
+    - "Pydantic v2.13"
+    - "SQLAlchemy 2.0"
+    - "Alembic 1.14"
+  database:
+    - "PostgreSQL 16 (Cloud VPS)"
+    - "SQLite 3 (Desktop Edge)"
+  devops:
+    - "Docker Compose v2"
+    - "Nginx Reverse Proxy"
+    - "Tauri 2 (Rust)"
+    - "GitHub Actions CI/CD"
+    - "n8n Automation Engine"
+
+architecture:
+  pattern: "Desacoplada: REST API + Híbrido Desktop (Tauri Sidecar) / Cloud (Docker VPS)"
+  databaseSchema: "Relacional 3NF con Snapshots Históricos Inmutables y Columnas Persistidas"
+  migrationsTool: "Alembic Batch Mode (Dual Dialect SQLite / PostgreSQL)"
+
+methodologies:
+  sddScope: "Refactorización analítica del Dashboard, resolución de consultas N+1 y rediseño de módulos con planes técnicos formales"
+  testingFrameworks:
+    - "Pytest"
+    - "Vitest"
+    - "React Testing Library"
+    - "HTTPX"
+  testCount:
+    backend: 972
+    frontend: 1690
+    total: 2662
+
+mediaArtifacts:
+  featuredDemo: "/assets/projects/yanesu/demo-pos-checkout.mp4"
+  architectureDiagram: "/assets/projects/yanesu/diagram-architecture.svg"
+  screenshots:
+    - src: "/assets/projects/yanesu/screenshot-pos.png"
+      caption: "Terminal de mostrador (POS) con soporte para split payments bimoneda y teclado rápido."
+    - src: "/assets/projects/yanesu/screenshot-invoices-hub.png"
+      caption: "Hub de compras y facturación con ingestión OCR multimodal vía Gemini AI."
+    - src: "/assets/projects/yanesu/screenshot-analytics.png"
+      caption: "Dashboard gerencial optimizado con agregaciones SQL nativas y carga diferida."
+---
