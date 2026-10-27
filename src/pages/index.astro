@@ -6,6 +6,8 @@ import ProjectFeaturedCard from "../components/ProjectFeaturedCard.astro";
 import ProjectSecondaryCard from "../components/ProjectSecondaryCard.astro";
 import SkillsMatrix from "../components/SkillsMatrix.astro";
 import CertificationsBento from "../components/CertificationsBento.astro";
+import ExperienceTimeline from "../components/ExperienceTimeline.astro";
+import Footer from "../components/Footer.astro";
 import { getCollection } from "astro:content";
 
 const projects = await getCollection("projects");
@@ -101,4 +103,31 @@ const tallerProject = projects.find((p) => p.id === "taller-admin");
 
     <CertificationsBento />
   </section>
+
+  <!-- Experiencia / Trayectoria Profesional -->
+  <section
+    id="experiencia"
+    class="scroll-mt-28 max-w-5xl mx-auto px-4 py-16 space-y-8"
+  >
+    <div class="space-y-2">
+      <span
+        class="font-mono text-xs text-emerald-400 tracking-wider uppercase"
+        style={`font-family: var(--font-mono)`}
+      >
+        04 / TRAYECTORIA PROFESIONAL
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-white leading-tight">
+        Experiencia laboral &amp;&nbsp;<em
+          class="not-italic"
+          style={`font-family: var(--font-serif); font-style: italic; font-weight: 400; color: #d4d4d8;`}
+          >sistemas desplegados</em
+        >
+      </h2>
+    </div>
+
+    <ExperienceTimeline />
+  </section>
+
+  <!-- Pie de Página -->
+  <Footer />
 </Layout>

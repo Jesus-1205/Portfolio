@@ -1,0 +1,54 @@
+---
+// Footer.astro — Pie de página sobrio estilo terminal
+---
+
+<footer class="w-full border-t border-white/5 bg-[#09090b]/80 backdrop-blur-sm mt-16">
+  <div
+    class="max-w-5xl mx-auto px-4 py-12 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs font-mono text-neutral-500"
+    style={`font-family: var(--font-mono)`}
+  >
+    <!-- Lado Izquierdo: Copyright & Principios -->
+    <div class="text-center sm:text-left leading-relaxed">
+      <p>
+        &copy; 2026 Jesús Blanco. Diseñado bajo principios de ingeniería y rendimiento
+        estático (Zero-JS baseline).
+      </p>
+    </div>
+
+    <!-- Lado Derecho: Enlaces rápidos & Scroll to Top -->
+    <div class="flex flex-wrap items-center justify-center gap-4 text-neutral-400">
+      <a
+        href="#proyectos"
+        class="hover:text-white transition-colors duration-150"
+      >
+        #proyectos
+      </a>
+      <a
+        href="#habilidades"
+        class="hover:text-white transition-colors duration-150"
+      >
+        #habilidades
+      </a>
+      <a
+        href="#certificaciones"
+        class="hover:text-white transition-colors duration-150"
+      >
+        #certificaciones
+      </a>
+      <a
+        href="#experiencia"
+        class="hover:text-white transition-colors duration-150"
+      >
+        #experiencia
+      </a>
+      <span class="text-neutral-700 select-none" aria-hidden="true">·</span>
+      <a
+        href="#"
+        class="text-neutral-300 hover:text-white transition-colors duration-150 inline-flex items-center gap-1"
+      >
+        <span>Volver arriba</span>
+        <span aria-hidden="true">&uarr;</span>
+      </a>
+    </div>
+  </div>
+</footer>
