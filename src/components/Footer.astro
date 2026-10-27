@@ -2,32 +2,53 @@
 // Footer.astro — Pie de página sobrio estilo terminal
 ---
 
-<footer class="w-full border-t border-white/5 bg-[#09090b]/80 backdrop-blur-sm mt-16">
+<footer
+  class="w-full border-t border-white/5 bg-[#09090b]/80 backdrop-blur-sm mt-16"
+>
   <div
     class="max-w-5xl mx-auto px-4 py-12 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs font-mono text-neutral-500"
     style={`font-family: var(--font-mono)`}
   >
     <!-- Lado Izquierdo: Copyright & Principios -->
     <div class="text-center sm:text-left leading-relaxed">
-      <p>
-        &copy; 2026 Jesús Blanco. Diseñado bajo principios de ingeniería y rendimiento
-        estático (Zero-JS baseline).
-      </p>
+      <p>&copy; 2026 Jesús Blanco · Full-Stack Software Developer.</p>
+      <a
+        href="https://github.com/Jesus-1205/portfolio"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:text-white transition-colors underline decoration-white/20 underline-offset-4"
+      >
+        Código fuente en GitHub ↗
+      </a>
     </div>
 
     <!-- Lado Derecho: Enlaces rápidos & Back to Top -->
-    <div class="flex flex-wrap items-center justify-center gap-4 text-neutral-400">
-      <a href="#proyectos" class="hover:text-white transition-colors duration-150">
-        #proyectos
+    <div
+      class="flex flex-wrap items-center justify-center gap-4 text-neutral-400"
+    >
+      <a
+        href="#proyectos"
+        class="hover:text-white transition-colors duration-150"
+      >
+        Proyectos
       </a>
-      <a href="#habilidades" class="hover:text-white transition-colors duration-150">
-        #habilidades
+      <a
+        href="#habilidades"
+        class="hover:text-white transition-colors duration-150"
+      >
+        Habilidades
       </a>
-      <a href="#certificaciones" class="hover:text-white transition-colors duration-150">
-        #certificaciones
+      <a
+        href="#certificaciones"
+        class="hover:text-white transition-colors duration-150"
+      >
+        Certificaciones
       </a>
-      <a href="#experiencia" class="hover:text-white transition-colors duration-150">
-        #experiencia
+      <a
+        href="#experiencia"
+        class="hover:text-white transition-colors duration-150"
+      >
+        Experiencia
       </a>
       <span class="text-neutral-700 select-none" aria-hidden="true">·</span>
       <button
@@ -36,7 +57,7 @@
         class="text-neutral-300 hover:text-white transition-colors duration-150 cursor-pointer inline-flex items-center gap-1 bg-transparent border-none p-0 font-mono text-xs"
         style={`font-family: var(--font-mono)`}
       >
-        <span>Volver arriba</span>
+        <span class="pr-3">Volver arriba</span>
         <span aria-hidden="true">&uarr;</span>
       </button>
     </div>
