@@ -1,0 +1,91 @@
+---
+// CertificationsBento.astro — Bento de Certificaciones Verificables (design.md §6.1)
+import { certifications } from "../data/certifications";
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {
+    certifications.map((cert) => {
+      const isFreeCodeCamp = cert.issuer === "freeCodeCamp";
+      const issuerColor = isFreeCodeCamp ? "text-emerald-400" : "text-sky-400";
+
+      return (
+        <article class="rounded-2xl border border-white/10 bg-[#121215] p-6 flex flex-col justify-between gap-6 hover:border-white/20 transition-all duration-300">
+          <div class="flex flex-col gap-4">
+            <!-- Emisor & Credential ID -->
+            <div class="flex items-center justify-between gap-2">
+              <span
+                class={`font-mono text-xs uppercase tracking-wider font-medium ${issuerColor}`}
+                style={`font-family: var(--font-mono)`}
+              >
+                {cert.issuer}
+              </span>
+              {cert.credentialId && (
+                <span
+                  class="font-mono text-xs text-neutral-400"
+                  style={`font-family: var(--font-mono)`}
+                >
+                  {cert.credentialId}
+                </span>
+              )}
+            </div>
+
+            <!-- Nombre de la certificación -->
+            <div>
+              <h3 class="font-bold text-lg text-white mt-1 leading-snug">
+                {cert.name}
+              </h3>
+              <p class="text-xs text-neutral-400 mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>{cert.date}</span>
+                <span class="text-neutral-600 select-none" aria-hidden="true">·</span>
+                <span class="text-neutral-300">{cert.workloadOrType}</span>
+              </p>
+            </div>
+
+            <!-- Competencias evaluadas -->
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              {cert.competencies.map((comp) => (
+                <span
+                  class="bg-neutral-900/60 border border-white/5 text-neutral-400 text-[11px] font-mono px-2.5 py-1 rounded-md"
+                  style={`font-family: var(--font-mono)`}
+                >
+                  {comp}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <!-- Enlace de validación oficial -->
+          <div class="pt-2 border-t border-white/5">
+            <a
+              href={cert.verificationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-300 hover:text-white transition-colors duration-150 group"
+              style={`font-family: var(--font-mono)`}
+              aria-label={`Verificar credencial oficial de ${cert.name} en ${cert.issuer}`}
+            >
+              <span>Verificar Credencial Oficial</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                aria-hidden="true"
+              >
+                <line x1="7" y1="17" x2="17" y2="7"></line>
+                <polyline points="7 7 17 7 17 17"></polyline>
+              </svg>
+            </a>
+          </div>
+        </article>
+      );
+    })
+  }
+</div>

@@ -1,0 +1,114 @@
+---
+// SkillsMatrix.astro — Matriz de Habilidades por Capas de Ingeniería (design.md §5)
+
+const categories = [
+  {
+    title: "Frontend & Estado Reactivo",
+    badge: "CLIENT-SIDE & STATE",
+    accent: "text-sky-400",
+    dotBg: "bg-sky-400",
+    icon: `<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z"/><path d="M14 9l-3 3 3 3"/><path d="M10 9l-3 3 3 3"/>`,
+    skills: [
+      "React 19",
+      "TypeScript 5",
+      "Zustand",
+      "Tailwind CSS v4",
+      "Vite 6",
+    ],
+  },
+  {
+    title: "Backend & Persistencia Relacional",
+    badge: "CORE & DATA LAYER",
+    accent: "text-emerald-400",
+    dotBg: "bg-emerald-400",
+    icon: `<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>`,
+    skills: [
+      "Python 3.12",
+      "FastAPI",
+      "SQLAlchemy 2.0 Modern Core",
+      "PostgreSQL 16",
+      "SQLite DELETE mode",
+      "Pydantic v2",
+    ],
+  },
+  {
+    title: "Infraestructura, DevOps & Edge",
+    badge: "RUNTIME & HOSTING",
+    accent: "text-indigo-400",
+    dotBg: "bg-indigo-400",
+    icon: `<rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/>`,
+    skills: [
+      "Linux VPS systemd/cron",
+      "Docker & Docker Compose v2",
+      "Nginx Reverse Proxy",
+      "cPanel/Passenger",
+      "Tauri 2 Rust",
+    ],
+  },
+  {
+    title: "Calidad de Software, Metodologías & IA",
+    badge: "QUALITY & AUTOMATION",
+    accent: "text-amber-400",
+    dotBg: "bg-amber-400",
+    icon: `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>`,
+    skills: [
+      "Spec-Driven Development SDD",
+      "TDD",
+      "Pytest",
+      "Vitest",
+      "Gemini AI Vision OCR",
+      "n8n Automation Engine",
+    ],
+  },
+];
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {
+    categories.map((category) => (
+      <div class="rounded-2xl border border-white/10 bg-[#121215] p-6 hover:border-white/20 transition-all duration-300 flex flex-col justify-between gap-5">
+        <!-- Encabezado de cuadrante -->
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span
+              class={`font-mono text-[11px] tracking-wider uppercase font-medium ${category.accent}`}
+              style={`font-family: var(--font-mono)`}
+            >
+              {category.badge}
+            </span>
+            <div class="flex items-center gap-1.5 text-neutral-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                set:html={category.icon}
+              />
+            </div>
+          </div>
+          <h3 class="text-lg font-bold text-white tracking-tight">
+            {category.title}
+          </h3>
+        </div>
+
+        <!-- Chips interactivos de tecnologías -->
+        <div class="flex flex-wrap gap-2">
+          {category.skills.map((skill) => (
+            <span
+              class="bg-neutral-900/80 border border-white/5 text-neutral-300 text-xs font-mono px-3 py-1.5 rounded-lg hover:border-white/20 hover:text-white hover:bg-neutral-800 transition-colors duration-150 select-none"
+              style={`font-family: var(--font-mono)`}
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
+      </div>
+    ))
+  }
+</div>
