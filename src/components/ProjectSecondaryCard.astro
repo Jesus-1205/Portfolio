@@ -57,39 +57,61 @@ const watermark = String(index).padStart(2, "0");
       </p>
     </div>
 
-    <!-- 4 métricas clave en grid 2×2 compacto -->
-    <div class="grid grid-cols-2 gap-2">
+    <!-- 4 métricas clave en grid 2×2 compacto con detalle -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
       {
         data.heroMetrics.map((metric) => (
-          <div class="flex flex-col gap-1 bg-neutral-900/40 border border-white/5 rounded-lg px-3 py-2.5">
+          <div class="flex flex-col gap-1 bg-neutral-900/60 border border-white/5 rounded-lg p-3">
             <span
-              class="text-base font-bold text-white tabular-nums leading-none"
+              class="text-lg font-bold text-white tabular-nums leading-none"
               style={`font-family: var(--font-mono)`}
             >
               {metric.value}
             </span>
-            <span class="text-xs text-neutral-300 leading-tight font-medium">{metric.label}</span>
+            <span class="text-xs text-neutral-300 leading-tight font-medium pt-0.5">
+              {metric.label}
+            </span>
+            <span
+              class="text-xs text-neutral-400 leading-relaxed pt-0.5"
+              style={`font-family: var(--font-mono)`}
+            >
+              {metric.detail}
+            </span>
           </div>
         ))
       }
     </div>
 
-    <!-- Viñeta técnica principal -->
+    <!-- Viñetas técnicas derivadas de los datos del proyecto -->
     <ul class="flex flex-col gap-2">
       <li class="flex items-start gap-2.5 text-sm text-neutral-300">
-        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"
-        ></span>
+        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
         <span>
           <strong class="text-white font-medium">Arquitectura: </strong>
           {data.architecture.pattern}
         </span>
       </li>
       <li class="flex items-start gap-2.5 text-sm text-neutral-300">
-        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"
-        ></span>
+        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
         <span>
           <strong class="text-white font-medium">Persistencia: </strong>
           {data.architecture.databaseSchema}
+        </span>
+      </li>
+      <li class="flex items-start gap-2.5 text-sm text-neutral-300">
+        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
+        <span>
+          <strong class="text-white font-medium">SDD scope: </strong>
+          {data.methodologies.sddScope}
+        </span>
+      </li>
+      <li class="flex items-start gap-2.5 text-sm text-neutral-300">
+        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
+        <span>
+          <strong class="text-white font-medium">Suite de auditoría: </strong>
+          {data.methodologies.testCount.total} scripts de integridad — {
+            data.methodologies.testingFrameworks.join(", ")
+          }
         </span>
       </li>
     </ul>
