@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar.astro";
 import Hero from "../components/Hero.astro";
 import ProjectFeaturedCard from "../components/ProjectFeaturedCard.astro";
 import ProjectSecondaryCard from "../components/ProjectSecondaryCard.astro";
+import PerformanceBenchmark from "../components/PerformanceBenchmark.astro";
 import SkillsMatrix from "../components/SkillsMatrix.astro";
 import EngineeringPrinciples from "../components/EngineeringPrinciples.astro";
 import CertificationsBento from "../components/CertificationsBento.astro";
@@ -55,6 +56,11 @@ const tallerProject = projects.find((p) => p.id === "taller-admin");
         <ProjectSecondaryCard project={tallerProject} index={2} />
       )
     }
+
+    <!-- Benchmark Comparativo de Telemetría -->
+    <div class="pt-4">
+      <PerformanceBenchmark />
+    </div>
   </section>
 
   <!-- Habilidades / Core Competencies -->
