@@ -5,6 +5,7 @@ import Hero from "../components/Hero.astro";
 import ProjectFeaturedCard from "../components/ProjectFeaturedCard.astro";
 import ProjectSecondaryCard from "../components/ProjectSecondaryCard.astro";
 import SkillsMatrix from "../components/SkillsMatrix.astro";
+import EngineeringPrinciples from "../components/EngineeringPrinciples.astro";
 import CertificationsBento from "../components/CertificationsBento.astro";
 import ExperienceTimeline from "../components/ExperienceTimeline.astro";
 import Footer from "../components/Footer.astro";
@@ -80,6 +81,30 @@ const tallerProject = projects.find((p) => p.id === "taller-admin");
     <SkillsMatrix />
   </section>
 
+  <!-- Filosofía de Desarrollo & Principios de Arquitectura -->
+  <section
+    id="filosofia"
+    class="scroll-reveal scroll-mt-28 max-w-5xl mx-auto px-4 py-16 space-y-8"
+  >
+    <div class="space-y-2">
+      <span
+        class="font-mono text-xs text-emerald-400 tracking-wider uppercase"
+        style={`font-family: var(--font-mono)`}
+      >
+        03 / INGENIERÍA &amp; METODOLOGÍA
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-white leading-tight">
+        Filosofía de desarrollo &amp;&nbsp;<em
+          class="not-italic"
+          style={`font-family: var(--font-serif); font-style: italic; font-weight: 400; color: #d4d4d8;`}
+          >criterio arquitectónico</em
+        >
+      </h2>
+    </div>
+
+    <EngineeringPrinciples />
+  </section>
+
   <!-- Certificaciones / Validación Externa -->
   <section
     id="certificaciones"
@@ -90,7 +115,7 @@ const tallerProject = projects.find((p) => p.id === "taller-admin");
         class="font-mono text-xs text-emerald-400 tracking-wider uppercase"
         style={`font-family: var(--font-mono)`}
       >
-        03 / VALIDACIÓN EXTERNA
+        04 / VALIDACIÓN EXTERNA
       </span>
       <h2 class="text-3xl sm:text-4xl font-bold text-white leading-tight">
         Certificaciones técnicas &amp;&nbsp;<em
@@ -114,7 +139,7 @@ const tallerProject = projects.find((p) => p.id === "taller-admin");
         class="font-mono text-xs text-emerald-400 tracking-wider uppercase"
         style={`font-family: var(--font-mono)`}
       >
-        04 / TRAYECTORIA PROFESIONAL
+        05 / TRAYECTORIA PROFESIONAL
       </span>
       <h2 class="text-3xl sm:text-4xl font-bold text-white leading-tight">
         Experiencia laboral &amp;&nbsp;<em

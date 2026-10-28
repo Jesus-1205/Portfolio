@@ -1,0 +1,65 @@
+---
+// EngineeringPrinciples.astro — Filosofía de Desarrollo & Principios de Arquitectura (Specs.md §2.A.5)
+
+const principles = [
+  {
+    tag: "PRECISIÓN FINANCIERA",
+    title: "Mandato 'Cero Floats' (IEEE 754 Banned)",
+    description:
+      "Tolerancia cero a errores de aproximación binaria en entornos multimoneda. Todo cálculo financiero, cobro dividido o inventario se construye exclusivamente con tipos Decimal exactos desde cadenas y redondeo bancario ROUND_HALF_UP.",
+    accent: "text-emerald-400",
+    badgeBorder: "border-emerald-500/20",
+    badgeBg: "bg-emerald-500/10",
+  },
+  {
+    tag: "CONSISTENCIA TEMPORAL",
+    title: "Integridad Referencial & Snapshots Inmutables",
+    description:
+      "Reglas RESTRICT estrictas en catálogos maestros para auditoría legal. Implementación de snapshots históricos desnormalizados en cabeceras de órdenes para congelar datos fiscales de clientes ante transferencias de vehículos o cambios de razón social.",
+    accent: "text-sky-400",
+    badgeBorder: "border-sky-500/20",
+    badgeBg: "bg-sky-500/10",
+  },
+  {
+    tag: "METODOLOGÍA DE CALIDAD",
+    title: "Spec-Driven Development (SDD in Action)",
+    description:
+      "Ninguna refactorización crítica o rediseño de base de datos se ejecuta sin especificación previa, benchmarks auditables y planes técnicos formales. Respaldado por suites deterministas de más de 2.660 pruebas sin fuga de estado.",
+    accent: "text-indigo-400",
+    badgeBorder: "border-indigo-500/20",
+    badgeBg: "bg-indigo-500/10",
+  },
+  {
+    tag: "PRAGMATISMO TÉCNICO",
+    title: "Ingeniería Pragmática vs. Sobreingeniería (YAGNI)",
+    description:
+      "Elección rigurosa de la herramienta adecuada para el entorno real: monolitos SSR ultra livianos sobre cPanel cuando se requiere imprimir papel continuo en <15 ms, o Tauri 2 en Rust (~30 MB RAM) para terminales de mostrador modestas.",
+    accent: "text-amber-400",
+    badgeBorder: "border-amber-500/20",
+    badgeBg: "bg-amber-500/10",
+  },
+];
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {
+    principles.map((item) => (
+      <div class="scroll-reveal rounded-2xl border border-white/10 bg-[#121215] p-6 sm:p-7 hover:border-white/20 transition-all duration-300 flex flex-col justify-between gap-4">
+        <div class="flex flex-col gap-2.5">
+          <span
+            class={`font-mono text-[10px] tracking-wider uppercase font-medium px-2.5 py-0.5 rounded-full border w-fit ${item.accent} ${item.badgeBorder} ${item.badgeBg}`}
+            style={`font-family: var(--font-mono)`}
+          >
+            {item.tag}
+          </span>
+          <h3 class="text-lg font-bold text-white tracking-tight leading-snug">
+            {item.title}
+          </h3>
+          <p class="text-sm text-neutral-300 leading-relaxed pt-1">
+            {item.description}
+          </p>
+        </div>
+      </div>
+    ))
+  }
+</div>
