@@ -75,3 +75,423 @@ mediaArtifacts:
     - src: "/assets/projects/yanesu/screenshot-analytics.png"
       caption: "Dashboard gerencial optimizado con agregaciones SQL nativas y carga diferida."
 ---
+
+## 01. Contexto de Negocio & Fricción Operativa
+
+**Yanesu Shisutemu** es una plataforma transaccional de Punto de Venta (POS) y Planificación de Recursos Empresariales (ERP) concebida para solventar los desafíos de distribución y venta al detal y mayor de bebidas, licores y alimentos en el complejo entorno económico venezolano. La operación comercial cotidiana presentaba cuatro fricciones estructurales que invalidaban el uso de soluciones genéricas del mercado:
+
+### Hiperinflación y Bimonetariedad Asimétrica (USD vs. VES)
+La economía de retail local requiere anclar los costos de reposición, la valoración de inventario y los márgenes brutos de ganancia en una moneda dura (**USD**). Sin embargo, el **95% de las transacciones en mostrador** se liquidan en moneda de curso legal (**VES**), conforme a la tasa de cambio oficial publicada diariamente por el Banco Central de Venezuela (BCV), la cual sufre ajustes continuos. Esto exige una conversión matemática bidireccional y en tiempo real en cada escaneo, preservando una exactitud financiera sin tolerar desvíos por redondeo.
+
+### Despacho Concurrente y Pagos Mixtos (*Split Payments*)
+El establecimiento opera con un catálogo activo de más de **250 SKUs de alta rotación**, atendiendo entre **50 y 250 clientes al día** (con picos concentrados durante fines de semana y festividades). En el mostrador, la regla operativa es la fragmentación del cobro: un solo cliente cancela una orden combinando dólares en efectivo, bolívares mediante tarjeta de débito en terminal bancario físico y transferencias móviles instantáneas (*Pago Móvil*).
+
+Para garantizar tiempos de despacho ágiles por cliente, el sistema opera mediante ergonomía de **atajos de teclado puros** (`F2` para búsqueda instantánea en catálogo, `F10` para apertura inmediata del panel de cobro), calculando el cambio correspondiente en divisa o bolívares de forma automática y registrando cada fracción de pago de forma inmutable.
+
+### Logística Inversa de Envases Retornables
+En el sector de cervecería industrial y refrescos de vidrio (formatos 222 ml y 333 ml), el inventario físico no es unidimensional. El producto existe simultáneamente bajo un circuito tripartito de estados:
+1. `LLENO`: Mercancía lista para la venta.
+2. `VACIO`: Botellas devueltas por los clientes que deben ser canjeadas.
+3. `CASILLERO`: Huacales de transporte y embalaje con valor de custodia.
+
+Cualquier desajuste en el balance de envases retornables genera pérdidas directas que erosionan el margen operativo del distribuidor, exigiendo una conciliación estricta entre botellas entregadas y recibidas en cada ticket.
+
+### Hardware Heterogéneo y Resiliencia *Offline-First*
+Las terminales de cobro en mostrador corresponden a hardware modesto (computadores portátiles con procesadores de gama de entrada y 4 GB de RAM) expuestos a cortes intermitentes de electricidad y conectividad a internet.
+
+El sistema no podía depender de una conexión activa a la nube para facturar: requería funcionar de forma **100% autónoma en el borde local (*Edge Desktop*)**, pero manteniendo la capacidad de sincronizarse y desplegarse como un servicio centralizado multiusuario sobre un **VPS Cloud Linux** para reportería remota de la gerencia y automatizaciones mediante agentes de IA.
+
+---
+
+## 02. Demostraciones en Vivo (Flujos en Producción)
+
+A continuación se presentan los artefactos visuales y flujos de trabajo clave en funcionamiento real:
+
+### 1. Terminal POS: Ergonomía de Teclado y Split Payments
+El flujo de cobro fue optimizado para permitir operaciones completas sin necesidad de levantar las manos del teclado físico.
+
+![Cobro rápido por teclado y split payment USD/VES](/assets/projects/yanesu/demo-pos-checkout.gif)
+
+*Demostración en vivo del checkout POS: navegación acelerada con atajos F2 y F10, distribución de cobro dividido en múltiples instrumentos de pago (USD efectivo + Débito VES) y liquidación transaccional con cálculo dinámico de vuelto.*
+
+![Terminal de mostrador bimodal](/assets/projects/yanesu/screenshot-pos.png)
+
+*Interfaz de la terminal de mostrador (POS): diseño bimodal con catálogo de productos filtrable con latencia imperceptible, visualización simultánea de precios en USD y VES y cola de pedidos en espera (Hold Queue).*
+
+---
+
+### 2. Ingestión Automatizada de Facturas con IA Multimodal
+Para digitalizar las compras a proveedores mayoristas de licores sin incurrir en la carga manual de cientos de renglones, se integró un pipeline de visión computacional.
+
+![Digitalización de facturas con IA Multimodal](/assets/projects/yanesu/demo-gemini-ocr.gif)
+
+*Digitalización asistida mediante Google Gemini API: la imagen de la factura del proveedor es preprocesada y analizada por el modelo multimodal, abstrayendo números de control, RIF, líneas de productos y alícuotas impositivas directamente hacia esquemas Pydantic estructurados con validación human-in-the-loop.*
+
+![Hub de compras](/assets/projects/yanesu/screenshot-invoices-hub.png)
+
+*Hub central de compras y cuentas por pagar: conciliación de pagos parciales a proveedores, seguimiento de vencimientos de crédito y auditoría de comprobantes bancarios vinculados.*
+
+---
+
+### 3. Rendimiento y Navegación Gerencial Post-Optimización
+La navegación a través de catálogos y paneles de inteligencia empresarial responde con fluidez absoluta tras el rediseño de la capa de datos.
+
+![Navegación reactiva post-optimización](/assets/projects/yanesu/demo-performance-navigation.gif)
+
+*Transición fluida e instantánea entre módulos del ERP tras la eliminación de cuellos de botella N+1 en SQLAlchemy y la adopción de consultas nativas con agregaciones SQL.*
+
+![Panel gerencial](/assets/projects/yanesu/screenshot-analytics.png)
+
+*Dashboard gerencial: visualización de volumen de facturación diaria, márgenes de ganancia consolidados por categoría y métricas de inventario crítico en tiempo real.*
+
+---
+
+## 03. Arquitectura del Sistema & Topología Dual
+
+Para cumplir simultáneamente con los requisitos de independencia offline en mostrador y acceso gerencial remoto, se diseñó una arquitectura dual unificada basada en FastAPI y React:
+
+```text
++-------------------------------------------------------------------------------------------------+
+|                               TOPOLOGÍAS DE DESPLIEGUE FLEXIBLES                                |
++-------------------------------------------------------------------------------------------------+
+|                                                                                                 |
+|   TOPOLOGÍA A: DESKTOP STANDALONE (Edge Offline)  |  TOPOLOGÍA B: CLOUD MULTI-USER (VPS Linux)  |
+|                                                   |                                             |
+|   +-------------------------------------------+   |   Navegador Web / Terminal Remota           |
+|   |   Ventana Nativa Tauri 2 (Rust Core)      |   |        │ HTTPS (:443)                       |
+|   |   +-----------------------------------+   |   |        ▼                                    |
+|   |   | React 19 SPA (WebView Local)      |   |   |   +─────────────────────────────────────+   |
+|   |   +-----------------+-----------------+   |   |   | Nginx Alpine (Reverse Proxy & SPA)  |   |
+|   |                     │ HTTP / Cookie       |   |   +──────────────────┬──────────────────+   |
+|   |                     ▼                     |   |                      │ /api/ (Red Bridge)   |
+|   |   | FastAPI Server (Python Sidecar)   |   |   |                      ▼                      |
+|   |   | - Dynamic Port: .port bridge      |   |   |   +─────────────────────────────────────+   |
+|   |   | - SQLite Embebida (yanesu.db)     |   |   |   | FastAPI ASGI Server (uvicorn)       |   |
+|   |   | - Operación 100% Offline          |   |   |   | - PostgreSQL 16 (Pool Conexiones)   |   |
+|   |   +-----------------------------------+   |   |   | - n8n Automation Engine             |   |
+|   |   +-------------------------------------------+   |   +─────────────────────────────────────+   |
+|                                                                                                 |
++-------------------------------------------------------------------------------------------------+
+```
+
+### Separación de Responsabilidades en Cuatro Capas
+
+El backend en Python 3.12 y FastAPI sigue una separación arquitectónica estricta para garantizar mantenibilidad, aislamiento transaccional y testeabilidad total:
+
+1. **Capa de Controladores y Rutas (`app/routes`):**  
+   Gestiona el ciclo de vida de las solicitudes HTTP y eventos Server-Sent Events (SSE). Extrae el contexto del usuario autenticado mediante cookies `httpOnly` firmadas, inyecta dependencias de base de datos a través de `Depends(get_db)` y mapea excepciones de dominio a códigos de estado HTTP precisos (404, 409, 422).
+2. **Capa de Servicios de Negocio (`app/services`):**  
+   Contiene la lógica de dominio transaccional pura: `SaleService`, `InvoiceService`, `InventoryService`, `RateService`. Cada servicio ejecuta operaciones atómicas coordinando múltiples tablas bajo bloques `db.commit()` y `db.rollback()`, asegurando que no existan inconsistencias de inventario o saldos contables a medio procesar.
+3. **Capa de Esquemas y Contratos (`app/schemas`):**  
+   Construida sobre **Pydantic v2**, define los contratos formales de validación de entrada y serialización de salida. Realiza coerción estricta de cadenas numéricas a tipos `Decimal`, rechaza valores con más de 2 cifras fraccionarias en precios de mostrador y valida campos requeridos en tiempo récord gracias a su núcleo en Rust.
+4. **Capa de Persistencia y Modelado (`app/models`):**  
+   Implementa modelos relacionales con **SQLAlchemy 2.0** (`Mapped[...]`, `mapped_column[...]`). Centraliza las políticas de integridad referencial con `ondelete="RESTRICT"`, subconsultas correlacionadas con `column_property` y columnas generadas persistidas (`Computed`) que resuelven los totales de venta a nivel del motor de base de datos.
+
+### Decisiones de Arquitectura Registradas (ADRs)
+
+- **ADR-001: Adopción de Tauri v2 frente a Electron para el Cliente de Escritorio**  
+  *Contexto:* Las terminales POS disponen de recursos de memoria muy restringidos (4 GB RAM). Un runtime Electron consume más de 200 MB de RAM base únicamente en el proceso de renderizado de Chromium.  
+  *Decisión:* Se adoptó Tauri v2 (núcleo en Rust 2021) acoplado a la WebView nativa del sistema operativo y orquestando el servidor FastAPI empaquetado como un proceso secundario supervisado (*sidecar*). Consumo de memoria resultante: **~30 MB de RAM**, permitiendo una ejecución fluida y arranque casi instantáneo.
+- **ADR-002: Dualidad de Motor de Base de Datos sin Bifurcación de Código**  
+  *Contexto:* La aplicación debe operar tanto en escritorio local con SQLite como en servidores en la nube con PostgreSQL 16 sin mantener dos ramas de código distintas.  
+  *Decisión:* Se abstrajo la capa de persistencia mediante SQLAlchemy 2.0 y se configuró **Alembic en modo batch** (`render_as_batch=True`). Para las limitaciones estructurales de SQLite en alteraciones de esquema, Alembic genera tablas provisionales y traslada los datos automáticamente manteniendo una nomenclatura unificada de restricciones (`POSTGRES_SQLITE_CONVENTION`).
+- **ADR-003: Centralización de la Autoridad Financiera en el Backend**  
+  *Contexto:* Las interfaces en React operan sobre JavaScript, cuyo tipo primitivo `number` sufre de imprecisiones de coma flotante IEEE 754 y es susceptible a desincronizaciones de estado local.  
+  *Decisión:* El cliente calcula montos únicamente con fines de previsualización visual inmediata. El servidor FastAPI recalcula, valida y sella los montos finales con precisión matemática `Decimal` antes de confirmar cualquier movimiento contable o de inventario.
+
+---
+
+## 04. Desafíos de Ingeniería & Casos Límite
+
+Durante la concepción y despliegue del sistema se superaron cuatro retos de ingeniería de alta complejidad:
+
+### Reto 1: Mandato "Cero Floats" & Largest Remainder Method
+
+El estándar de coma flotante de doble precisión IEEE 754 genera anomalías de representación binaria inaceptables en finanzas:
+
+```text
+0.1 + 0.2 = 0.30000000000000004
+```
+
+En transacciones que consolidan decenas de renglones gravados con IVA del 16% y tasados a cotizaciones con 4 decimales, el uso de floats introduce desajustes acumulativos de céntimos que desalinean los balances diarios de caja y la facturación fiscal.
+
+#### Regla de Arquitectura
+Queda terminantemente prohibido el uso del tipo `float` en toda la plataforma para montos, cantidades, descuentos o tasas. Toda variable monetaria debe instanciarse estrictamente mediante `Decimal(str(monto))`, aplicando redondeo bancario determinista `ROUND_HALF_UP`:
+
+```python
+from decimal import Decimal, ROUND_HALF_UP
+
+def quantize_currency(amount: Decimal | str) -> Decimal:
+    """Cuantiza un monto monetario a exactamente 2 cifras decimales usando ROUND_HALF_UP."""
+    if not isinstance(amount, Decimal):
+        amount = Decimal(str(amount))
+    return amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+```
+
+#### El Problema del Desfase de Prorrateo y Solución con Largest Remainder Method
+Cuando se divide un descuento global o se distribuye una retención entre múltiples ítems de una venta, la suma de las partes redondeadas individualmente puede diferir del total global por ±0.01 (el dilema del centavo huérfano).
+
+Para erradicar esta inconsistencia, se implementó el **Largest Remainder Method (Hare-Niemeyer)**:
+
+```python
+from decimal import Decimal, ROUND_FLOOR, ROUND_HALF_UP
+from typing import List
+
+def distribute_amount_exact(total_to_distribute: Decimal, weights: List[Decimal]) -> List[Decimal]:
+    """
+    Distribuye un monto total entre una lista de ponderaciones utilizando el
+    Largest Remainder Method (Hare-Niemeyer), garantizando que la sumatoria
+    de los resultados sea idéntica al total_to_distribute al centavo exacto.
+    """
+    total_weight = sum(weights)
+    if total_weight == Decimal("0"):
+        return [Decimal("0.00") for _ in weights]
+
+    # 1. Asignación inicial truncada al piso (ROUND_FLOOR)
+    exact_shares = [(w / total_weight) * total_to_distribute for w in weights]
+    floored_shares = [s.quantize(Decimal("0.01"), rounding=ROUND_FLOOR) for s in exact_shares]
+
+    # 2. Cálculo del residuo fraccionario restante
+    allocated_sum = sum(floored_shares)
+    remainder_cents = int((total_to_distribute - allocated_sum) * Decimal("100"))
+
+    # 3. Ordenamiento por mayor residuo fraccionario
+    remainders = [(i, exact_shares[i] - floored_shares[i]) for i in range(len(weights))]
+    remainders.sort(key=lambda x: x[1], reverse=True)
+
+    # 4. Distribución de céntimos sobrantes a las posiciones con mayor residuo
+    results = list(floored_shares)
+    for i in range(remainder_cents):
+        idx = remainders[i][0]
+        results[idx] += Decimal("0.01")
+
+    assert sum(results) == total_to_distribute, "La sumatoria prorrateada debe coincidir exactamente"
+    return results
+```
+
+---
+
+### Reto 2: Algoritmo de Desempaque Transaccional Automático (Auto-Unboxing)
+
+En el expendio de licores, la mercancía suele recibirse y contabilizarse en cajas cerradas (por ejemplo, cajas de 24 o 36 botellas de cerveza), pero los clientes suelen solicitar unidades individuales.
+
+Exigirle al cajero que abandone la pantalla de cobro para ingresar manualmente una "orden de desempacado de caja" genera colapsos en la fila y propicia errores de inventario.
+
+#### Solución Transaccional Atómica
+`SaleService` evalúa la disponibilidad de stock en el momento exacto del checkout: si la cantidad de botellas solicitadas excede el stock unitario disponible (`stock_unidades < requested_qty`), pero existen cajas completas en existencia (`stock_cajas > 0`), el sistema ejecuta un desempacado transparente dentro de la misma transacción:
+
+```text
+[Venta de 3 Unidades]
+         │
+         ▼
+¿stock_unidades >= 3? ──No──▶ ¿stock_cajas >= 1? ──No──▶ [Error 409: Stock Insuficiente]
+         │                              │
+         Sí                             Sí (Auto-Unboxing)
+         │                              ├─▶ 1. stock_cajas -= 1
+         │                              ├─▶ 2. stock_unidades += (unidades_por_caja - 3)
+         │                              └─▶ 3. Registro en auditoría: "AUTO_UNBOXING_SALE"
+         ▼                              │
+[Confirmación Transaccional de la Venta (Commit Atómico)]
+```
+
+Esta operación se ejecuta bajo niveles de aislamiento de base de datos que bloquean la fila del producto (`with_for_update`), evitando colisiones de concurrencia cuando dos terminales intentan desempacar el mismo lote de inventario simultáneamente.
+
+---
+
+### Reto 3: Desacoplamiento de Conexiones DB en SSE (/stream) (&lt; 10 ms)
+
+Para mantener actualizadas las tasas cambiarias oficiales en todas las pantallas del POS sin recargar la página, se habilitó un canal Server-Sent Events (`/api/exchange-rates/stream`).
+
+#### El Problema de Agotamiento del Pool
+En la arquitectura habitual de FastAPI, una dependencia como `db: Session = Depends(get_db)` permanece activa y abierta mientras dure la respuesta HTTP. Al tratarse de un stream de larga duración (que puede permanecer conectado durante horas), **cada terminal de mostrador secuestraba una conexión del pool de SQLAlchemy**, provocando rápidamente el agotamiento total de conexiones (`QueuePool limit of size 10 overflow 20 reached`) y el bloqueo de nuevas ventas.
+
+#### Solución: Autenticación Rápida y Desacoplamiento de Entidad
+Se reestructuró el endpoint para limitar la vida de la conexión a la base de datos a un destello imperceptible (menor a 10 ms):
+
+```python
+@router.get("/exchange-rates/stream")
+async def stream_exchange_rates(
+    request: Request,
+    user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    # 1. Operación rápida en BD: extraer cotización inicial vigente (<10 ms)
+    latest_rate = db.scalars(
+        select(ExchangeRate).order_by(ExchangeRate.fecha.desc()).limit(1)
+    ).first()
+
+    # 2. Desacoplamiento explícito de entidades SQLAlchemy de la sesión
+    if latest_rate:
+        db.expunge(latest_rate)
+    db.expunge(user)
+
+    # 3. Cierre voluntario e inmediato de la sesión para liberar la conexión al pool
+    db.close()
+
+    # 4. Generador asíncrono conectado exclusivamente al bus de eventos en memoria
+    async def event_generator():
+        queue = await event_bus.subscribe("exchange_rates")
+        try:
+            # Emisión inmediata de la cotización actual desacoplada
+            if latest_rate:
+                yield f"data: {latest_rate.model_dump_json()}\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                new_rate_event = await queue.get()
+                yield f"data: {new_rate_event}\n\n"
+        finally:
+            await event_bus.unsubscribe("exchange_rates", queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+```
+
+---
+
+### Reto 4: Resolución Dinámica de Puertos en Tauri (Watchdog en Rust)
+
+En instalaciones sobre ordenadores de escritorio en mostrador, el puerto TCP habitual `8000` suele verse comprometido por utilidades del fabricante, servicios de Windows o suites de software antivirus corporativo. Una asignación fija provocaba fallos de inicio silenciosos en el cliente nativo.
+
+#### Solución de Enlace Dinámico y Watchdog en Rust
+Se implementó un mecanismo cooperativo en dos fases:
+
+1. **Gestor de Puertos Python (`port_manager.py`):**  
+   Al arrancar, el subproceso secundario (*sidecar*) escanea el rango de puertos `8000` a `8010`. Enlaza el primer socket libre disponible, levanta el servidor `uvicorn` sobre dicho puerto y escribe el valor acordado en el archivo local `%LOCALAPPDATA%/YanesuShisutemu/.port`.
+2. **Watchdog Supervisor en Rust (Tauri Core):**  
+   El proceso maestro en Rust inicia un hilo de supervisión (*watchdog*) que sondea periódicamente la creación del archivo `.port` durante un tiempo límite de 10 segundos con retroceso exponencial. Al detectar el archivo, ejecuta un sondeo HTTP hacia `/api/health`. Al recibir confirmación exitosa con código 200, redirige de inmediato la WebView interna hacia la URL resuelta dinámicamente (`http://127.0.0.1:<puerto_libre>`).
+
+```rust
+// Hilo supervisor simplificado en Rust (Tauri Core)
+fn await_backend_ready(port_file_path: &Path) -> Result<u16, String> {
+    let start = std::time::Instant::now();
+    let timeout = std::time::Duration::from_secs(10);
+
+    while start.elapsed() < timeout {
+        if let Ok(content) = std::fs::read_to_string(port_file_path) {
+            if let Ok(port) = content.trim().parse::<u16>() {
+                // Verificar que el backend responde satisfactoriamente al healthcheck
+                let url = format!("http://127.0.0.1:{}/api/health", port);
+                if reqwest::blocking::get(&url).map(|r| r.status().is_success()).unwrap_or(false) {
+                    return Ok(port);
+                }
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_millis(150));
+    }
+    Err("Timeout: El backend de Python no estuvo listo en el plazo esperado.".into())
+}
+```
+
+---
+
+## 05. Spec-Driven Development & Telemetría
+
+Durante la etapa de prototipo funcional (MVP), la reportería gerencial y la consolidación de ventas (`/sales/summary`) se realizaban iterando en memoria mediante bucles `for` en Python. Con el crecimiento del catálogo y la acumulación histórica de transacciones, los tiempos de procesamiento se deterioraron hasta los **863.60 ms**, sobrecargando la red con payloads de más de **50 KB**.
+
+Asimismo, en plataformas Windows se detectó una penalización recurrente de **2.05 segundos** al resolver peticiones dirigidas a `localhost`: el stack de red intentaba la conexión primero mediante IPv6 (`::1`), esperando el tiempo de desconexión por timeout antes de ejecutar el fallback hacia IPv4 (`127.0.0.1`).
+
+### Refactorización Mediante Spec-Driven Development
+Bajo la metodología **Spec-Driven Development (SDD)**, se redactaron especificaciones de optimización exhaustivas antes de alterar el código productivo. La refactorización se centró en trasladar el cálculo al motor de base de datos relacional mediante agregaciones agrupadas con `func.sum()`:
+
+```python
+# Push-down SQL: Delegación del cómputo de costos y márgenes al motor de la base de datos
+stmt = (
+    select(
+        func.sum(SaleItem.cantidad * SaleItem.precio_unitario_usd).label("ingreso_bruto_usd"),
+        func.sum(SaleItem.cantidad * Product.precio_costo_usd).label("costo_total_usd"),
+        func.sum(
+            (SaleItem.precio_unitario_usd - Product.precio_costo_usd) * SaleItem.cantidad
+        ).label("utilidad_bruta_usd")
+    )
+    .join(Product, SaleItem.producto_id == Product.id)
+    .join(Sale, SaleItem.venta_id == Sale.id)
+    .where(Sale.fecha_venta >= fecha_inicio, Sale.fecha_venta <= fecha_fin)
+)
+metricas = db.execute(stmt).first()
+```
+
+### Tabla Comparativa de Rendimiento y Telemetría (21 Endpoints Auditados)
+
+Los siguientes datos reflejan los benchmarks in-process ejecutados con la suite `backend/scripts/benchmark_suite.py` comparando la línea base frente a la versión optimizada en producción:
+
+| # | Endpoint / Operación Auditada | Latencia MVP | Latencia Optimizada (p50 / p95) | Reducción Latencia | Payload Original | Payload Optimizado | Impacto de Red |
+|---|-------------------------------|:------------:|:-------------------------------:|:------------------:|:----------------:|:------------------:|:--------------:|
+| 1 | `GET /api/dashboard/stats` | 185.40 ms | **15.20 ms / 21.40 ms** | **-91.8%** | 18.40 KB | 2.10 KB | -88.6% |
+| 2 | `GET /api/dashboard/categories/summary` | 142.10 ms | **18.60 ms / 24.50 ms** | **-86.9%** | 12.80 KB | 1.65 KB | -87.1% |
+| 3 | `GET /api/dashboard/suppliers/summary` | 168.30 ms | **21.30 ms / 28.90 ms** | **-87.3%** | 14.20 KB | 1.90 KB | -86.6% |
+| 4 | `GET /api/products` (Catálogo maestro) | 280.50 ms | **42.10 ms / 56.40 ms** | **-85.0%** | 68.40 KB | 14.20 KB | -79.2% |
+| 5 | `GET /api/products/{id}` | 24.50 ms | **6.10 ms / 8.90 ms** | **-75.1%** | 3.20 KB | 1.10 KB | -65.6% |
+| 6 | `POST /api/products` (Alta de SKU) | 48.60 ms | **16.40 ms / 22.80 ms** | **-66.3%** | 2.80 KB | 1.40 KB | -50.0% |
+| 7 | `GET /api/products/top-selling` | 194.20 ms | **24.80 ms / 31.00 ms** | **-87.2%** | 16.50 KB | 3.40 KB | -79.4% |
+| 8 | `GET /api/products/low-stock` | 115.80 ms | **14.90 ms / 20.10 ms** | **-87.1%** | 9.80 KB | 2.20 KB | -77.6% |
+| 9 | `GET /api/sales` (Historial paginado) | 312.40 ms | **54.20 ms / 69.80 ms** | **-82.6%** | 45.60 KB | 8.10 KB | -82.2% |
+| 10 | `POST /api/sales` (Checkout transaccional) | 165.80 ms | **38.50 ms / 49.20 ms** | **-76.8%** | 6.40 KB | 2.80 KB | -56.3% |
+| 11 | `GET /api/sales/{id}` (Recibo fiscal) | 36.40 ms | **9.20 ms / 12.80 ms** | **-74.7%** | 4.10 KB | 1.90 KB | -53.7% |
+| 12 | `GET /api/sales/summary?rango=dia` | 863.60 ms | **184.70 ms / 215.30 ms** | **-78.6%** | 58.20 KB | 5.40 KB | -90.7% |
+| 13 | `GET /api/sales/summary?rango=mes` | 1,420.00 ms | **240.10 ms / 295.40 ms** | **-83.1%** | 94.60 KB | 9.80 KB | -89.6% |
+| 14 | `GET /api/invoices?page=1` | 352.60 ms | **58.00 ms / 68.30 ms** | **-83.6%** | 51.82 KB | 7.86 KB | -84.8% |
+| 15 | `POST /api/invoices` (Ingestión asistida) | 520.00 ms | **110.40 ms / 145.20 ms** | **-78.8%** | 18.20 KB | 4.50 KB | -75.3% |
+| 16 | `GET /api/invoices/{id}` | 42.10 ms | **11.50 ms / 15.20 ms** | **-72.7%** | 5.60 KB | 2.10 KB | -62.5% |
+| 17 | `POST /api/invoices/{id}/payments` | 64.20 ms | **18.90 ms / 25.10 ms** | **-70.6%** | 3.80 KB | 1.60 KB | -57.9% |
+| 18 | `GET /api/exchange-rates/latest` | 18.20 ms | **4.20 ms / 6.10 ms** | **-76.9%** | 1.20 KB | 0.50 KB | -58.3% |
+| 19 | `GET /api/exchange-rates/stream` (Setup) | 150.00 ms | **6.80 ms / 9.50 ms** | **-95.5%** | Stream | Stream | — |
+| 20 | `POST /api/webhooks/bcv-sync` | 420.50 ms | **85.40 ms / 112.00 ms** | **-79.7%** | 4.20 KB | 1.10 KB | -73.8% |
+| 21 | `GET /api/retornables/summary` | 98.40 ms | **14.20 ms / 19.80 ms** | **-85.6%** | 8.90 KB | 1.80 KB | -79.8% |
+
+---
+
+## 06. Estrategia de Calidad (2.662 Tests)
+
+Para garantizar que un sistema transaccional de cobro no sufra regresiones durante la introducción de nuevas características, se implementó una estricta pirámide de pruebas automatizadas:
+
+```text
+TOTAL CONSOLIDADO: 2.662 Casos de Prueba Automatizados
+│
+├── BACKEND: 48 archivos | 972 casos de prueba (Pytest 8.3 + HTTPX)
+│   ├── Rutas e Integración de API REST (18 archivos | 376 tests)
+│   ├── Servicios de Lógica de Negocio y Dominio (20 archivos | 484 tests)
+│   ├── Automatización M2M y Webhooks n8n (2 archivos | 27 tests)
+│   ├── Precisión Financiera y Regla "Zero-Float" (1 archivo | 17 tests)
+│   ├── Seguridad, Control de Roles RBAC y Auditoría (3 archivos | 23 tests)
+│   └── Configuración de Base de Datos y Benchmarks (4 archivos | 45 tests)
+│
+└── FRONTEND: 249 archivos | 1.690 casos de prueba (Vitest 2.1 + React Testing Library)
+    ├── Vistas de Módulos / Features (19 dominios de negocio)
+    ├── Stores Zustand (cartStore, holdQueueStore, exchangeRateStore)
+    ├── Custom Hooks (useBarcodeScanner, useCheckout, usePosKeyboard)
+    └── Componentes Visuales y Formateadores de Divisas
+```
+
+### Tabla Consolidada de Suites de Prueba
+
+| Capa / Subsistema | Herramientas & Frameworks | Archivos de Prueba | Total de Tests | Áreas Críticas Evaluadas |
+|---|---|:---:|:---:|---|
+| **Backend Core** | Pytest 8.3, HTTPX, Pydantic v2 | 48 archivos | **972 tests** | Transacciones atómicas, desempacado, precisión decimal, RBAC, endpoints REST |
+| **Frontend Core** | Vitest 2.1, React Testing Library, jsdom | 249 archivos | **1.690 tests** | Renderizado de vistas POS, lógica de stores Zustand, atajos de teclado, formateadores |
+| **Integración Global** | Suites unificadas en CI (GitHub Actions) | **297 archivos** | **2.662 tests** | **100% de aprobación en pipeline continuo** |
+
+### Aislamiento Riguroso y Determinismo en `conftest.py`
+
+El aislamiento entre pruebas de base de datos se logra evitando motores compartidos en memoria o volcados manuales:
+
+- **Bases de Datos Efímeras Aisladas:** Cada función de prueba genera un archivo temporal único mediante `tempfile.NamedTemporaryFile(suffix=".db")`. Ninguna mutación contamina las pruebas subsiguientes.
+- **Inyección de Dependencias Limpia:** Mediante `app.dependency_overrides[get_db]`, el framework sustituye dinámicamente el motor por la base temporal recién sembrada.
+- **Sembrado Canónico Automático:** Antes de iniciar la prueba, se instancian determinísticamente los métodos de pago estándar (Efectivo USD, Punto de Venta VES, Pago Móvil), los roles esenciales (`ADMINISTRADOR`, `OPERADOR`) y un usuario maestro. En la fase de desmantelamiento (*teardown*), el archivo de base de datos se destruye físicamente.
+
+### Casos Límite Auditados en la Suite
+
+1. **Rechazo de Decimales Excesivos (`test_decimal_precision.py`):** Se verifica que cualquier petición con más de 2 cifras fraccionarias en importes sea rechazada con código HTTP 422, validando a su vez que la tasa de cambio preserve estrictamente 4 decimales.
+2. **Atomicidad de Desempaque Concurrente:** Pruebas que simulan peticiones simultáneas de compra sobre unidades agotadas, verificando que la deducción de cajas y el incremento de stock suelto preserven el balance sin lecturas sucias (*phantom reads*).
+3. **Idempotencia de Sincronización Cambiaria:** Pruebas con llamadas sucesivas idénticas de webhooks de n8n, verificando que no se generen registros redundantes en el historial de tasas.
+4. **Prevención de Sobrepagos a Facturas:** Validación de respuesta con código de conflicto HTTP 409 cuando el total de abonos asociados a una factura de compra supere el importe total adeudado al proveedor.
+
+---
+
+## 07. Conclusiones y Retrospectiva de Ingeniería
+
+El diseño e implementación de **Yanesu Shisutemu** demuestra que las restricciones operativas severas —hiperinflación, hardware modesto, inestabilidad de red y coexistencia bimoneda— no son impedimentos para la construcción de software con estándares de ingeniería de primer nivel:
+
+1. **Eficiencia de Recursos en Hardware Modesto:** La sustitución de entornos pesados de escritorio por Tauri v2 con sidecar en Python redujo el consumo base a ~30 MB de RAM, permitiendo una experiencia de usuario rápida y receptiva en equipos de gama de entrada sin dependencia de internet.
+2. **Garantía Contable No Negociable:** La disciplina de cálculo orientada a tipos `Decimal` estandarizados bajo `ROUND_HALF_UP` y el método de restos mayores (*Largest Remainder Method*) aseguraron un balance de caja exacto, blindado por 2.662 pruebas automatizadas.
+3. **Optimización Respaldada por Telemetría:** La aplicación de Spec-Driven Development (SDD) permitió diagnosticar problemas reales (como la latencia artificial por resolución IPv6 y bucles de aplicación en agregaciones) para reducir la latencia general en un 65.8% mediante push-down analítico a SQL nativo.
+4. **Extensión Inteligente:** La integración de agentes autónomos con n8n, mensajería instantánea en Telegram y modelos de visión multimodal con Gemini consolidó un ecosistema de software moderno, proactivo y adaptado al comercio del mundo real.
