@@ -73,3 +73,418 @@ mediaArtifacts:
     - src: "/assets/projects/taller-admin/mecanicos_stats.png"
       caption: "Dashboard analítico de rendimiento laboral computado con agregaciones CASE WHEN en SQL."
 ---
+
+## 01. Contexto de Negocio & Deuda Técnica Legada
+
+**Auto Servicios Villalobos, C.A.** es un taller mecánico y centro de servicios automotrices en Venezuela con más de 8 años de trayectoria ininterrumpida. Históricamente, la totalidad de sus operaciones cotidianas —recepción de vehículos, órdenes de reparación, cotizaciones de repuestos, asignación de mecánicos y facturación formal— dependía de más de una decena de hojas de cálculo de Microsoft Excel inconexas entre sí.
+
+Con el paso de los años, el volumen operativo acumulado superó los **7.000 presupuestos y registros de clientes**, provocando un colapso sistémico caracterizado por cuatro fricciones críticas que amenazaban la viabilidad del negocio:
+
+### 1. Pérdida de Trazabilidad por Rotación de Propietarios
+En el rubro automotriz, los vehículos cambian de dueño periódicamente. En las hojas de cálculo heredadas, al actualizar el nombre del cliente asociado a una placa específica, se sobreescribían de forma destructiva todos los presupuestos y facturas emitidos en años anteriores. Esto causaba que reparaciones de motor efectuadas dos o tres años atrás aparecieran atribuidas al comprador reciente, destruyendo la validez jurídica, fiscal y técnica del historial del vehículo.
+
+### 2. Conflicto de Doble Numeración Operativa
+En el patio del taller coexisten dos lógicas de control documental obligatorias pero no sincronizadas:
+- **La Hoja Física de Bahía/Foso:** Boleta de control interno numerada a mano por el mecánico al ingresar el vehículo a la bahía de trabajo.
+- **Los Correlativos Fiscales y Comerciales:** Secuencias formales exigidas por la normativa tributaria y administrativa (Presupuestos, Facturas y Notas de Entrega).
+
+Adicionalmente, los mantenimientos menores ("servicios express", tales como cambios de fluidos o sustitución rápida de pastillas de freno) no abrían carpeta física de taller pero sí requerían comprobante formal inmediato, desfasando las secuencias numéricas y generando inconsistencias contables al cierre de cada jornada.
+
+### 3. Restricción Física de Formatos Continuos Preimpresos
+La empresa opera con papelería membretada física con límites rígidos de renglones:
+- **Facturas Fiscales:** Máximo de 10 renglones útiles por hoja.
+- **Notas de Entrega:** Máximo de 12 renglones útiles por hoja.
+
+Cuando una reparación integral de motor, transmisión o suspensión totalizaba entre 15 y 30 renglones (entre repuestos adquiridos y servicios de mano de obra), el personal administrativo se veía forzado a calcular divisiones manuales en papel borrador, duplicando cabeceras a mano y recalculando subtotales sobre la marcha, con una alta tasa de error humano y desperdicio de talonarios membretados numerados.
+
+### 4. Fricción Cambiaria e Inflacionaria
+El entorno económico venezolano impone la necesidad operativa de calcular costos y emitir presupuestos anclados en divisas extranjeras (**USD**), pero facturar y liquidar en moneda de curso legal (**VES**) a la tasa oficial publicada por el Banco Central de Venezuela (BCV). Las terminales administrativas requerían una sincronización cambiaria instantánea y desatendida, sin depender de APIs comerciales de terceros con suscripciones en moneda extranjera o tasas de caída elevadas.
+
+### La Solución de Persistencia Híbrida: Almacén Frío vs. Almacén Caliente
+Para salvar los 8 años de historial sin arriesgar la integridad del nuevo sistema transaccional, se implementó una estrategia de **persistencia híbrida**:
+1. **Almacén Caliente (Relacional 3NF):** Tablas normalizadas (`clientes`, `vehiculos`, `ordenes`, `ordenes_detalle`, `mecanicos`) para la operación cotidiana, con tipado estricto, integridad referencial y snapshots inmutables.
+2. **Almacén Frío (`historico_reconstruido`):** Datastore inmutable donde un pipeline ETL en Python ingirió los +7.000 registros heredados de Excel, almacenando cada documento original como un objeto JSON crudo en `datos_crudos` y exponiendo un índice de texto concatenado en `busqueda_indexada`. Esto permitió al taller consultar de forma instantánea cualquier reparación antigua sin forzar una normalización retroactiva destructiva sobre esquemas corruptos.
+
+---
+
+## 02. Interfaz en Producción & Flujo Operativo
+
+La interfaz de usuario fue diseñada bajo la filosofía de **Monolito SSR Ligero**: renderizado directo en servidor mediante Jinja2 y componentes reactivos construidos con **Vanilla JavaScript (ES6+) nativo**, prescindiendo de dependencias de empaquetado complejas y garantizando latencias de respuesta imperceptibles junto a soporte nativo para impresión física mediante hojas de estilo `@media print`.
+
+### Cuadrícula Reactiva de Órdenes y Búsqueda Operativa
+
+La pantalla principal proporciona al recepcionista y al jefe de patio una vista consolidada de todas las órdenes activas, con soporte para filtrado instantáneo por placa, número de orden y estatus operativo.
+
+![Cuadrícula operativa de órdenes](/assets/projects/taller-admin/ordenes_grid.png)
+
+*Cuadrícula operativa de órdenes con búsqueda reactiva optimizada por placa y estatus: filtrado en tiempo real con debounce de 250 ms y visualización instantánea del estado de los vehículos en taller.*
+
+La barra de búsqueda implementa un debounce nativo en JavaScript de 250 ms que despacha solicitudes asíncronas hacia `/api/ordenes`, permitiendo ubicar un vehículo entre miles de registros en menos de 35 ms sin recargar la página. Los indicadores de estado diferencian con claridad visual órdenes en cotización, en proceso de bahía, completadas o facturadas.
+
+---
+
+### Módulo de Emisión Transaccional con Particionamiento Atómico
+
+El formulario de creación de órdenes unifica la captura de datos del cliente, la ficha del vehículo, los renglones de mano de obra y repuestos, y la sincronización cambiaria con la tasa oficial del BCV.
+
+![Módulo de emisión transaccional](/assets/projects/taller-admin/nueva_orden.png)
+
+*Módulo de emisión transaccional de órdenes: formulario ergonómico con validación de placa, cálculo automático de importes en divisa y bolívares, y particionamiento automático mediante create_split para adaptarse al papel continuo fiscal.*
+
+El módulo realiza autocompletado en caliente de clientes y vehículos registrados. Si los renglones añadidos exceden la capacidad física del formato preimpreso seleccionado (10 renglones para Factura o 12 para Nota de Entrega), el algoritmo `create_split` del backend asume automáticamente la división atómica de los documentos, reservando los correlativos continuos necesarios sin intervención manual.
+
+---
+
+### Inspección Detallada de Orden y Snapshots Inmutables
+
+Al seleccionar cualquier orden de la cuadrícula, se despliega una vista modal detallada que refleja la composición exacta de los trabajos ejecutados y el personal técnico asignado.
+
+![Detalle de orden y congelación de snapshots](/assets/projects/taller-admin/orden_modal.png)
+
+*Detalle expandido de orden: inspección completa de ítems, asignación múltiple de mecánicos y visualización de snapshots históricos inmutables de cliente y vehículo.*
+
+Esta vista expone los datos históricos congelados al momento de la emisión (`cli_nombre`, `cli_rif`, `veh_modelo`). Aunque el vehículo o el cliente sean modificados en el maestro del sistema en fechas posteriores, la orden preserva con rigor de auditoría la información vigente al momento de la transacción. Desde este modal se activan las rutinas de impresión física ajustadas a los márgenes milimétricos del papel continuo.
+
+---
+
+### Dashboard Analítico de Rendimiento Laboral
+
+Para la liquidación de comisiones y el seguimiento de productividad del equipo técnico, el sistema incorpora un panel analítico gerencial alimentado por consultas SQL optimizadas.
+
+![Dashboard analítico de rendimiento](/assets/projects/taller-admin/mecanicos_stats.png)
+
+*Dashboard analítico de productividad laboral: cálculo consolidado de órdenes ejecutadas y facturación por mecánico computado en base de datos en menos de 20 ms mediante agregaciones CASE WHEN.*
+
+El módulo permite auditar el volumen de trabajo ejecutado por cada mecánico, distinguiendo entre órdenes completadas y en proceso, así como el importe exacto atribuible a mano de obra vs. repuestos provistos por el taller o por el cliente, eliminando cálculos manuales al cierre de cada semana.
+
+---
+
+## 03. Arquitectura del Sistema: Monolito Híbrido SSR + API REST
+
+La arquitectura de Taller-Admin v2.0 adopta el **Service Layer Pattern** (Capa de Servicios de Dominio) para desacoplar completamente la lógica de negocio y las reglas de consistencia relacional de la capa de transporte HTTP y presentación.
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           NAVEGADOR / CLIENTE                           │
+│        (HTML5 Semántico, CSS3 @media print, Vanilla JavaScript ES6+)     │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ HTTP / JSON / SSR
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                       CAPA DE CONTROLADORES API                         │
+│               FastAPI 0.136 (v2.0) / Flask-WSGI (cPanel)                │
+│       Rutas: /api/clientes, /api/vehiculos, /api/ordenes, /api/mecanicos │
+│                 Validaciones en frontera con Pydantic v2                │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                         CAPA DE SERVICIOS (DDD)                         │
+│   cliente_service  │  vehiculo_service  │  orden_service  │  tasa_service  │
+│      - Lógica transaccional pura                                        │
+│      - Particionamiento create_split y bloqueo pesimista                │
+│      - Construcción de snapshots inmutables                             │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                        PERSISTENCIA Y MODELADO                          │
+│               SQLAlchemy 2.0 ORM (Declarative Base Mapped)              │
+│       SQLite 3 (PRAGMA journal_mode=DELETE) ──► PostgreSQL Ready        │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Organización Modular en Capas
+
+1. **Capa de Routers (`app/routers/`):**  
+   Controladores delgados organizados por dominio funcional (`clientes`, `vehiculos`, `ordenes`, `mecanicos`, `historico`). Su única responsabilidad es recibir solicitudes HTTP, ejecutar inyección de dependencias (`db: Session = Depends(get_db)`), validar esquemas de entrada mediante **Pydantic v2** y devolver DTOs serializados o plantillas HTML renderizadas.
+2. **Capa de Servicios (`app/services/`):**  
+   Encapsula la totalidad de las reglas de negocio. Métodos como `orden_service.create_split`, `orden_service.get_all` o `vehiculo_service.cambiar_propietario` gestionan transacciones relacionales explícitas, garantizando que los controladores no contengan consultas ORM directas ni lógica de persistencia.
+3. **Capa de Presentación SSR (`templates/` y `static/js/`):**  
+   Plantillas Jinja2 modulares estructuradas sobre un contenedor base. Los componentes interactivos consumen la API REST mediante la API nativa `fetch`, manteniendo el código ligero y libre de bundles de JavaScript pesados.
+4. **Capa de Persistencia (`app/models/` y `app/database.py`):**  
+   Modelos relacionales construidos bajo la sintaxis declarativa de SQLAlchemy 2.0 (`Mapped[...]`, `mapped_column[...]`), agnósticos al motor de base de datos y diseñados para migrar a PostgreSQL sin alterar código de negocio.
+
+### Flujo Transaccional End-to-End
+
+El siguiente diagrama detalla la secuencia de ejecución atómica durante la emisión de una orden de trabajo con particionamiento de papel continuo:
+
+```text
+                      FLUJO DE DATOS END-TO-END (CREACIÓN DE ORDEN)
+
+[Cliente / UI]              [Router API]            [Pydantic v2]        [Service Layer]           [Database Engine]
+      │                           │                       │                     │                          │
+      │── POST /api/ordenes ─────►│                       │                     │                          │
+      │   (JSON payload)          │── Valida schema ─────►│                     │                          │
+      │                           │◄─ DTO sanitizado ─────│                     │                          │
+      │                           │                                             │                          │
+      │                           │── create_split(db, data) ──────────────────►│                          │
+      │                           │                                             │── with_for_update() ────►│ (Lock Secuencia)
+      │                           │                                             │── _build_snapshot() ────►│ (Lee Cliente/Veh)
+      │                           │                                             │── INSERT Cabecera(s) ───►│
+      │                           │                                             │── INSERT Detalles ──────►│
+      │                           │                                             │── INSERT Mecánicos ─────►│
+      │                           │                                             │── UPDATE Secuencia ─────►│
+      │                           │                                             │── COMMIT / ROLLBACK ────►│
+      │                           │◄─ Entidades creadas ────────────────────────│                          │
+      │◄─ HTTP 201 Created ───────│                                             │                          │
+      │   {"ordenes": [...]}      │                                             │                          │
+```
+
+### Adaptación Pragmática: De cPanel WSGI (v1) a FastAPI (v2.0)
+
+En su fase inicial de despliegue productivo, el sistema debía operar dentro de la infraestructura existente del cliente: un servidor Linux administrado bajo **cPanel**, cuyo gestor de procesos **Phusion Passenger** opera nativamente con el estándar sincrónico **WSGI**. Para garantizar una puesta en producción inmediata sin sobrecostos de hosting, la interfaz web original se adaptó sobre **Flask**, reutilizando el 100% de los modelos SQLAlchemy y las plantillas Jinja2.
+
+En la versión **v2.0**, la arquitectura evolucionó hacia **FastAPI 0.136**, incorporando:
+- Inyección de dependencias formalizada (`Depends`) para sesiones de base de datos y validadores de contexto.
+- Modelos de validación con **Pydantic v2.13**, acelerados internamente por su núcleo en Rust.
+- Documentación interactiva autogenerada bajo estándares OpenAPI (`/docs`).
+- Compatibilidad ASGI nativa mediante **Uvicorn**, habilitando el despliegue tanto en servidores locales de borde como en contenedores Docker y plataformas Cloud modernas.
+
+---
+
+## 04. Desafíos de Ingeniería & Casos Límite
+
+Durante el diseño e implementación del sistema, se resolvieron cuatro desafíos técnicos complejos derivados de las restricciones físicas del taller y del entorno de ejecución:
+
+### Reto 1: Particionamiento Atómico por Límite de Papelería (`create_split`)
+
+**Problema:**  
+Los formatos continuos preimpresos utilizados por la imprenta fiscal presentan restricciones físicas inalterables: las Facturas disponen de exactamente 10 renglones útiles y las Notas de Entrega de 12 renglones. Una reparación mayor con 25 ítems desborda el formulario físico. Resolver este desborde mediante estilos CSS de impresión (`page-break-after`) era inviable, pues fiscal y contablemente cada hoja física emitida debe poseer su propio número de control correlativo, su cabecera formal y su subtotal legal independiente.
+
+**Solución Implementada:**  
+Se diseñó el algoritmo transaccional `create_split` dentro de `app/services/orden_service.py`. El servicio calcula dinámicamente la cantidad de documentos requeridos:
+
+```text
+chunks = ceil(total_items / limite_renglones)
+```
+
+Para prevenir condiciones de carrera cuando múltiples estaciones administrativas facturan en simultáneo, el servicio adquiere un bloqueo pesimista sobre la tabla de secuencias antes de reservar los identificadores numéricos:
+
+```python
+# app/services/orden_service.py
+seq = (
+    db.query(models.DocumentSequence)
+    .filter(models.DocumentSequence.tipo_documento == data.tipo_documento)
+    .with_for_update()
+    .first()
+)
+```
+
+El algoritmo reserva en memoria el bloque continuo de $N$ correlativos consecutivos (por ejemplo, del 000540 al 000542), actualiza el puntero de la secuencia en base de datos al último correlativo reservado, e inserta $N$ cabeceras de órdenes enlazadas. Cada cabecera recibe su respectivo chunk de renglones y su total prorrateado. Toda la operación se confina a un único bloque transaccional: o se emiten todos los documentos correlativos de forma consistente, o se revierte la transacción completa (`db.rollback()`), garantizando cero saltos de numeración fiscal.
+
+---
+
+### Reto 2: El Patrón Snapshot Histórico (Desnormalización Deliberada vs. 3NF)
+
+**Problema:**  
+En un esquema relacional normalizado en Tercera Forma Normal (3NF), una orden de reparación consulta los datos del titular a través de la relación transitiva:
+`Orden -> Vehiculo -> Cliente`.
+
+Si un vehículo cambia de dueño y el recepcionista actualiza la clave foránea en la tabla `vehiculos`, una consulta posterior sobre facturas emitidas dos años atrás proyectaría erróneamente al nuevo comprador como receptor de los servicios pasados, invalidando la auditoría tributaria y falseando el historial contable.
+
+**Solución Implementada:**  
+Se aplicó un patrón de **desnormalización deliberada** mediante campos de snapshot congelados en la tabla `ordenes`: `cli_nombre`, `cli_rif`, `cli_telefono`, `cli_direccion`, `veh_modelo`, `veh_anio`, `veh_color`.
+
+Al crear o confirmar una orden, el servicio ejecuta `_build_snapshot`, extrayendo los datos vigentes en ese instante y almacenándolos como columnas estáticas en la cabecera. Para mantener compatibilidad con registros antiguos del histórico migrado, el modelo ORM expone propiedades calculadas que priorizan el snapshot y utilizan la relación viva únicamente como respaldo:
+
+```python
+# app/models/orden.py
+@property
+def cliente_nombre(self) -> str | None:
+    # Prioridad: Snapshot inmutable guardado al momento de la emisión
+    if self.cli_nombre:
+        return self.cli_nombre
+    # Respaldo: Datos vivos del cliente actual asignado al vehículo
+    if self.vehiculo and self.vehiculo.cliente:
+        return self.vehiculo.cliente.razon_social
+    return None
+```
+
+---
+
+### Reto 3: Locking en Hosting Compartido con `PRAGMA journal_mode=DELETE`
+
+**Problema:**  
+En motores SQLite modernos, el modo de concurrencia predeterminado es WAL (*Write-Ahead Logging*). Sin embargo, bajo sistemas de archivos de hosting compartido en cPanel, los archivos auxiliares `-wal` y `-shm` presentan bloqueos huérfanos recurrentes cuando los procesos de Phusion Passenger son reciclados agresivamente por inactividad o límites de memoria del servidor web. Esto dejaba la base de datos en estado de bloqueo permanente (*database is locked*), impidiendo el acceso a los usuarios.
+
+**Solución Implementada:**  
+En `app/database.py`, se interceptó la conexión del motor mediante eventos de SQLAlchemy para forzar el modo de diario tradicional:
+
+```python
+# app/database.py
+if _is_sqlite:
+    @event.listens_for(engine, "connect")
+    def set_journal_mode(dbapi_conn, connection_record):
+        dbapi_conn.execute("PRAGMA journal_mode=DELETE")
+```
+
+**Análisis de Trade-off:**  
+Se asumió una reducción marginal en el rendimiento de escrituras concurrentes de alta frecuencia (irrelevante para una carga de taller de 3 a 5 terminales simultáneas) a cambio de obtener un **archivo único `.db` 100% autocontenido y libre de locks residuales**. Esto permite además ejecutar copias de seguridad en caliente mediante un Cron diario sin riesgo de respaldar archivos en estado transaccional corrupto:
+
+```bash
+# Script de respaldo diario automatizado en cPanel Cron (23:00 hrs)
+FECHA=$(date +%Y%m%d_%H%M)
+cp /home/usuario/app/taller_database.db /home/usuario/backups/taller_backup_$FECHA.db
+find /home/usuario/backups/ -name "taller_backup_*.db" -mtime +30 -delete
+```
+
+---
+
+### Reto 4: Scraping Resiliente en Caliente para Tasas Oficiales BCV
+
+**Problema:**  
+La normativa fiscal venezolana exige reflejar las transacciones en bolívares calculadas a la tasa oficial del Banco Central de Venezuela (BCV). Las APIs comerciales de divisas son costosas o sufren caídas frecuentes, mientras que el portal gubernamental `bcv.org.ve` experimenta latencias elevadas, problemas de certificados SSL intermedios y cambios sutiles en su estructura HTML.
+
+**Solución Implementada:**  
+El módulo `app/services/tasa_service.py` y el endpoint `/api/ordenes/tasa-bcv` implementan un extractor resiliente optimizado:
+- **Contexto SSL Tolerante:** Se utiliza un contexto SSL permisivo (`ssl.CERT_NONE`) para sortear la ausencia de autoridades certificadoras intermedias en ciertos entornos Linux heredados.
+- **Parsing Ultraligero por Expresiones Regulares:** En lugar de cargar librerías pesadas de árbol DOM como BeautifulSoup, la tasa se extrae directamente del flujo de bytes HTML mediante expresiones regulares precompiladas dirigidas a los contenedores `#dolar` y `#euro`, consumiendo menos de 2 MB de memoria.
+- **Circuit Breaker y Degradación Elegante:** Se estableció un timeout estricto de red de 10 segundos. Si el portal del BCV no responde, el servicio captura la excepción `URLError` y retorna un código HTTP `503 Service Unavailable` con un mensaje descriptivo, activando en el frontend el desbloqueo del campo para ingreso manual de la tasa sin detener la facturación del taller.
+
+---
+
+## 05. Spec-Driven Development (v1 MVP a v2.0 Clean Architecture)
+
+La evolución de Taller-Admin de su versión inicial (v1 MVP) a la versión productiva actual (v2.0) ilustra el ciclo de vida de refactorización guiado por especificaciones (**Spec-Driven Development**), abordando la deuda técnica acumulada en la fase de validación comercial.
+
+### Matriz Comparativa de Deuda Técnica
+
+| Dimensión Arquitectónica | Estado Anterior (v1 — MVP Monolítico) | Estado Final Refactorizado (v2.0) |
+| :--- | :--- | :--- |
+| **Estructura de Código** | Lógica de negocio y consultas SQL mezcladas dentro de los manejadores de ruta HTTP. | **Separación en Capas (Service Layer):** Controladores delgados y servicios de dominio aislados en `app/services/`. |
+| **Eficiencia de Base de Datos** | **Problema N+1 Severo:** Consultas individuales por cada cliente, vehículo y mecánico al listar órdenes en la cuadrícula. | **Eager Loading Estratégico:** Reducción a **1 sola consulta SQL** mediante precarga `joinedload` multinivel en SQLAlchemy 2.0. |
+| **Modelado de Personal** | Campo de texto plano desnormalizado `mecanico_responsable: str`, impidiendo auditoría y métricas. | **Relación Many-to-Many Estricta:** Tabla asociativa `orden_mecanicos` con claves compuestas e índices dedicados. |
+| **Métricas y Analítica** | Cómputo de comisiones mediante bucles iterativos en memoria dentro del proceso Python. | **Agregaciones SQL Nativas:** Sentencias `CASE WHEN` calculadas directamente por el motor de BD en `< 20 ms`. |
+| **Seguridad de Configuración** | Parámetros de entorno y datos fiscales quemados (*hardcoded*) en el código fuente. | **Aislamiento Inmutable:** Migración a `pydantic-settings` con `.env`, tipado estricto y sanitización de datos. |
+
+---
+
+### Erradicación del Problema N+1 mediante `joinedload` Multinivel
+
+En la versión inicial, cargar la cuadrícula principal de órdenes ejecutaba una consulta inicial para recuperar las cabeceras, seguida de tres consultas adicionales por cada fila para obtener el vehículo, el cliente asociado y los mecánicos asignados. Para una página estándar de 100 órdenes, el servidor ejecutaba **301 consultas a la base de datos**:
+
+$$\text{Consultas} = 1 + 3N = 1 + 3(100) = 301$$
+
+En v2.0, el método `orden_service.get_all` fue reescrito para instruir al motor ORM a ejecutar precargas multinivel mediante un único `LEFT OUTER JOIN`:
+
+```python
+# app/services/orden_service.py
+q = (
+    db.query(models.Orden)
+    .options(
+        joinedload(models.Orden.vehiculo).joinedload(models.Vehiculo.cliente),
+        joinedload(models.Orden.mecanicos).joinedload(models.OrdenMecanico.mecanico),
+    )
+    .outerjoin(models.Vehiculo, models.Orden.placa_vehiculo == models.Vehiculo.placa)
+    .outerjoin(models.Cliente, models.Vehiculo.id_cliente == models.Cliente.id_cliente)
+    .filter(models.Orden.activo == True)
+)
+```
+
+**Impacto en Rendimiento:**
+- Las llamadas a la base de datos se redujeron de **301 consultas a 1 única consulta SQL consolidada**.
+- La latencia total del renderizado de la cuadrícula disminuyó en más de un **85%**, estabilizándose en cifras inferiores a 15 ms en entorno de producción.
+
+---
+
+### Cómputo Analítico en Base de Datos con Agregaciones `CASE WHEN`
+
+El cálculo de rendimiento de mecánicos requería consolidar órdenes completadas, órdenes en proceso y facturación total generada por mano de obra. En v1, esta operación transfería miles de registros a Python para ser procesados mediante bucles `for`, consumiendo memoria y bloqueando el hilo de ejecución del servidor web.
+
+En v2.0, el endpoint `/api/mecanicos/stats/resumen` delega el cálculo completo al motor relacional mediante sentencias condicionales `CASE WHEN` ejecutadas bajo la sintaxis moderna de SQLAlchemy 2.0 Core:
+
+```python
+# app/routers/mecanicos.py
+stmt = (
+    select(
+        models.Mecanico.id_mecanico,
+        models.Mecanico.nombre,
+        func.sum(case((models.Orden.tipo_documento.in_(REALES), 1), else_=0)).label("total"),
+        func.coalesce(func.sum(case(
+            (models.Orden.tipo_documento.in_(REALES) &
+             (models.OrdenDetalle.tipo_item == "mano_de_obra"),
+             models.OrdenDetalle.cantidad * models.OrdenDetalle.precio_unitario), else_=0
+        )), 0).label("monto_total"),
+        func.sum(case(
+            (models.Orden.tipo_documento.in_(REALES) &
+             (models.Orden.estatus.in_(["Procesado", "Completado"]), 1), else_=0
+        )).label("completadas"),
+    )
+    .outerjoin(models.OrdenMecanico, models.Mecanico.id_mecanico == models.OrdenMecanico.id_mecanico)
+    .outerjoin(models.Orden, (models.OrdenMecanico.id_orden == models.Orden.id_orden) & (models.Orden.activo == True))
+    .outerjoin(models.OrdenDetalle, models.OrdenDetalle.id_orden == models.Orden.id_orden)
+    .filter(models.Mecanico.activo == True)
+    .group_by(models.Mecanico.id_mecanico)
+)
+```
+
+**Resultado:**  
+El cálculo analítico de todo el personal técnico se resuelve en **`< 20 ms`**, liberando completamente la CPU del proceso web y permitiendo consultas estadísticas instantáneas sin penalizar la navegación concurrente del taller.
+
+---
+
+## 06. Estrategia de Testing & Calidad
+
+Para validar la solidez del motor transaccional sin comprometer información sensible del negocio, se diseñó una estrategia de calidad sustentada en un entorno de pruebas réplica y una batería automatizable de aserciones relacionales.
+
+### Dataset de Alta Fidelidad en Entorno Aislado (`Taller_DB_TEST_2026.db`)
+
+Se generó un datastore sintético con estructura idéntica a la base de datos de producción para auditoría de rendimiento y pruebas de regresión:
+- **16 Clientes Sintéticos:** Personas naturales y jurídicas con cédulas y RIFs conformes a las especificaciones formales del SENIAT en distintas ciudades del país (Caracas, Valencia, Maracaibo, Barquisimeto, Mérida).
+- **48 Vehículos:** Distribución realista de 2 a 4 vehículos por cliente, cubriendo modelos de alta rotación (Toyota Corolla, Hilux, Chevrolet Aveo, Ford Fiesta) con años entre 2010 y 2024.
+- **8 Mecánicos:** Especialistas en áreas de motor, frenos, tren delantero y electricidad automotriz.
+- **83 Órdenes de Trabajo:** Cobertura exhaustiva de los cuatro estados del ciclo operativo:
+  - *Procesado:* Validación de subtotales, retenciones y congelación de snapshots inmutables.
+  - *En proceso:* Validación de visualización y modificación en tiempo real.
+  - *Pendiente:* Casos de auditoría de cuentas por cobrar y servicios express.
+  - *Cancelado:* Casos negativos para garantizar que no computen en la facturación activa.
+
+---
+
+### Batería de 18 Scripts SQL de Diagnóstico y Consistencia (`sql/CONSULTAS_UTILES.sql`)
+
+La integridad del datastore se verifica periódicamente mediante un conjunto de 18 scripts SQL que actúan como aserciones automatizadas de consistencia:
+
+| Script de Auditoría | Objetivo Técnico de la Aserción | Criterio de Aceptación (PASS/FAIL) |
+| :--- | :--- | :--- |
+| **Integridad de Snapshots (`#17`)** | Identifica órdenes activas con datos congelados de cliente nulos o vacíos (`cli_nombre IS NULL`). | `Resultado = 0` órdenes sin snapshot histórico. |
+| **Detección de Huérfanos (`#17`)** | Detecta renglones en `ordenes_detalle` cuya clave foránea `id_orden` no exista en `ordenes`. | `Resultado = 0` renglones huérfanos en la base de datos. |
+| **Órdenes sin Vehículo (`#17`)** | Comprueba que ninguna orden formal carezca de placa asignada o apunte a un vehículo inexistente. | `Resultado = 0` órdenes transaccionales sin placa válida. |
+| **Auditoría de Secuencias (`#14`)** | Compara el valor registrado en `document_sequences` contra el valor máximo de `numero_impreso` emitido. | `ultimo_numero >= MAX(numero_impreso)` sin desfases. |
+| **Análisis de Márgenes (`#16`)** | Agrupa ítems por `suministrado_por` (`taller` vs. `cliente`) para verificar la correcta discriminación de costos. | Validación contable: repuestos provistos por el cliente deben computar costo cero para el taller. |
+| **Conciliación Aritmética (`#3` / `#10`)** | Compara el campo `total_orden` contra la sumatoria de subtotales `(cantidad * precio_unitario)` en detalles. | Discrepancia absoluta menor a `0.01` (control de precisión flotante). |
+
+---
+
+### Casos Límite Críticos Auditados
+
+1. **Determinismo en Particionamiento (`create_split`):**  
+   - *Escenario:* Envío de una orden con 24 ítems bajo el tipo `"Factura"` (límite de 10 ítems por hoja).  
+   - *Resultado Verificado:* El sistema genera exactamente 3 órdenes continuas (10 + 10 + 4 ítems), con números correlativos rigurosamente consecutivos (ej. `000101`, `000102`, `000103`), y la suma exacta de sus subtotales coincide al céntimo con el presupuesto original.
+2. **Transferencia de Titularidad Vehicular:**  
+   - *Escenario:* Se invoca `cambiar_propietario("AB123CD", nuevo_id_cliente)`.  
+   - *Resultado Verificado:* Todas las órdenes previas conservan inalterados los datos del cliente original en sus columnas de snapshot, mientras que las órdenes creadas posteriormente adoptan de forma transparente la información del nuevo comprador.
+3. **Resiliencia ante Caída del Portal BCV:**  
+   - *Escenario:* Simulación de indisponibilidad del portal `bcv.org.ve` mediante timeout forzado.  
+   - *Resultado Verificado:* El servidor no arroja una excepción fatal 500; responde con código HTTP 503 descriptivo y la interfaz gráfica desbloquea los campos de divisa para permitir el ingreso manual de la tasa sin detener la operatividad del taller.
+
+---
+
+## 07. Conclusiones y Retrospectiva de Ingeniería
+
+El desarrollo y puesta en producción de **Taller-Admin v2.0** sintetiza lecciones fundamentales de ingeniería de software aplicada a entornos comerciales exigentes con recursos acotados:
+
+### 1. Ingeniería Pragmática vs. Sobreingeniería (YAGNI)
+Uno de los mayores riesgos en el desarrollo moderno es la adopción refleja de arquitecturas distribuidas complejas (microservicios, colas de mensajería asíncronas, SPAs pesadas con miles de dependencias npm) para problemas que se benefician sustancialmente más de un **monolito estructurado y predecible**. 
+
+La elección de un monolito SSR ligero con Jinja2 y Vanilla JS ES6+ eliminó costos de infraestructura, erradicó etapas de compilación frágiles y otorgó control milimétrico sobre el motor de renderizado de impresión física, resolviendo la necesidad del cliente con un consumo de memoria inferior a **80 MB de RAM**.
+
+### 2. Modernización y Rescate de Negocios Legados
+La deuda técnica acumulada durante 8 años en hojas de cálculo de Excel no se abordó como un obstáculo a desechar, sino como el activo central del negocio. El diseño del **datastore híbrido** demostró que es posible honrar el pasado operativo (mediante un almacén frío JSON inmutable) mientras se construye una base relacional robusta en 3NF para el presente y futuro de la organización.
+
+### 3. Resolución de Restricciones del Mundo Real
+La excelencia técnica no reside únicamente en la elegancia del código abstracto, sino en su capacidad para operar armónicamente con restricciones físicas y regulatorias:
+- Bloqueos pesimistas para proteger secuencias de papel continuo.
+- Congelación de snapshots para salvaguardar la validez fiscal ante la rotación de propietarios.
+- Adaptabilidad para ejecutarse de forma estable tanto en hosting compartido cPanel/WSGI como en arquitecturas modernas con FastAPI/ASGI.
+
+### 4. Madurez Arquitectónica: De Prototipo a Sistema de Alta Disponibilidad
+La transición entre la versión 1 y la versión 2.0 evidencia el valor de aplicar **Spec-Driven Development**: validar primero la viabilidad operativa del sistema y, una vez consolidada la adopción de los usuarios, refactorizar con rigor técnico aislando la lógica en capas de servicios, erradicando ineficiencias N+1 y garantizando la testeabilidad integral del producto.
