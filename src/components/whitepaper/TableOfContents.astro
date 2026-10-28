@@ -39,7 +39,8 @@ const filteredHeadings = (headings || []).filter((h) => h.depth === 2 || h.depth
             <li class={heading.depth === 3 ? "pl-3.5 border-l border-white/5 ml-1" : ""}>
               <a
                 href={`#${heading.slug}`}
-                class="toc-link block py-1 text-neutral-400 hover:text-white transition-colors duration-150 leading-relaxed truncate"
+                title={heading.text}
+                class="toc-link block py-1 text-neutral-400 hover:text-white transition-colors duration-150 leading-relaxed break-words line-clamp-2"
                 data-target={heading.slug}
               >
                 {heading.text}
@@ -167,6 +168,5 @@ const filteredHeadings = (headings || []).filter((h) => h.depth === 2 || h.depth
     });
   }
 
-  setupTOC();
   document.addEventListener("astro:page-load", setupTOC);
 </script>
