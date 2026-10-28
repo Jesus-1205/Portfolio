@@ -1,11 +1,18 @@
 ---
 // Navbar.astro — Floating Island Navbar (design.md §3.1)
+const navLinks = [
+  { href: "#proyectos", label: "Proyectos" },
+  { href: "#habilidades", label: "Habilidades" },
+  { href: "#filosofia", label: "Filosofía" },
+  { href: "#certificaciones", label: "Certificaciones" },
+  { href: "#experiencia", label: "Experiencia" },
+];
 ---
 
-<header class="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
+<header class="fixed top-4 inset-x-0 z-50 flex flex-col items-center px-4">
   <nav
     aria-label="Navegación principal"
-    class="flex items-center gap-6 rounded-full border border-white/10 bg-neutral-950/95 px-5 py-2 backdrop-blur-xl shadow-2xl shadow-black/50"
+    class="flex items-center gap-3 sm:gap-6 rounded-full border border-white/10 bg-neutral-950/95 px-4 sm:px-5 py-2 backdrop-blur-xl shadow-2xl shadow-black/50"
   >
     <!-- Monograma / Identificador -->
     <a
@@ -23,12 +30,7 @@
     <!-- Enlaces ancla -->
     <ul class="hidden md:flex items-center gap-1" role="list">
       {
-        [
-          { href: "#proyectos", label: "Proyectos" },
-          { href: "#habilidades", label: "Habilidades" },
-          { href: "#certificaciones", label: "Certificaciones" },
-          { href: "#experiencia", label: "Experiencia" },
-        ].map(({ href, label }) => (
+        navLinks.map(({ href, label }) => (
           <li>
             <a
               href={href}
@@ -52,5 +54,150 @@
     >
       Contacto
     </a>
+
+    <!-- Botón Toggle Menú Móvil -->
+    <button
+      type="button"
+      id="mobile-nav-toggle"
+      class="md:hidden flex items-center justify-center w-8 h-8 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 cursor-pointer"
+      aria-label="Abrir menú de navegación"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+    >
+      <!-- Icono Hamburger -->
+      <svg
+        id="hamburger-icon"
+        class="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M4 6h16M4 12h16M4 18h16"
+        />
+      </svg>
+      <!-- Icono Cerrar -->
+      <svg
+        id="close-icon"
+        class="w-4 h-4 hidden"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M6 18L18 6M6 6l12 12"
+        />
+      </svg>
+    </button>
   </nav>
+
+  <!-- Dock Menú Móvil -->
+  <div
+    id="mobile-menu"
+    class="hidden md:hidden mt-2 w-full max-w-sm rounded-2xl border border-white/10 bg-neutral-950/95 p-3 backdrop-blur-xl shadow-2xl shadow-black/60"
+  >
+    <ul class="flex flex-wrap items-center justify-center gap-2" role="list">
+      {
+        navLinks.map(({ href, label }) => (
+          <li>
+            <a
+              href={href}
+              class="inline-block px-3.5 py-1.5 rounded-full text-xs font-medium text-neutral-300 bg-white/5 border border-white/5 hover:text-white hover:bg-white/10 hover:border-white/15 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            >
+              {label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
 </header>
+
+<script>
+  let mobileNavCleanup: (() => void) | null = null;
+
+  function setupMobileNav() {
+    if (mobileNavCleanup) {
+      mobileNavCleanup();
+      mobileNavCleanup = null;
+    }
+
+    const toggleBtn = document.getElementById("mobile-nav-toggle");
+    const mobileMenu = document.getElementById("mobile-menu");
+    const hamburgerIcon = document.getElementById("hamburger-icon");
+    const closeIcon = document.getElementById("close-icon");
+
+    if (!toggleBtn || !mobileMenu) return;
+
+    const closeMenu = () => {
+      mobileMenu.classList.add("hidden");
+      toggleBtn.setAttribute("aria-expanded", "false");
+      toggleBtn.setAttribute("aria-label", "Abrir menú de navegación");
+      hamburgerIcon?.classList.remove("hidden");
+      closeIcon?.classList.add("hidden");
+    };
+
+    const openMenu = () => {
+      mobileMenu.classList.remove("hidden");
+      toggleBtn.setAttribute("aria-expanded", "true");
+      toggleBtn.setAttribute("aria-label", "Cerrar menú de navegación");
+      hamburgerIcon?.classList.add("hidden");
+      closeIcon?.classList.remove("hidden");
+    };
+
+    const onToggle = (e: MouseEvent) => {
+      e.stopPropagation();
+      const isExpanded = toggleBtn.getAttribute("aria-expanded") === "true";
+      if (isExpanded) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    };
+
+    toggleBtn.addEventListener("click", onToggle);
+
+    const links = mobileMenu.querySelectorAll("a");
+    const onLinkClick = () => {
+      closeMenu();
+    };
+    links.forEach((l) => l.addEventListener("click", onLinkClick));
+
+    const onDocumentClick = (e: MouseEvent) => {
+      if (
+        !mobileMenu.contains(e.target as Node) &&
+        !toggleBtn.contains(e.target as Node)
+      ) {
+        if (!mobileMenu.classList.contains("hidden")) {
+          closeMenu();
+        }
+      }
+    };
+    document.addEventListener("click", onDocumentClick);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !mobileMenu.classList.contains("hidden")) {
+        closeMenu();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+
+    mobileNavCleanup = () => {
+      toggleBtn.removeEventListener("click", onToggle);
+      links.forEach((l) => l.removeEventListener("click", onLinkClick));
+      document.removeEventListener("click", onDocumentClick);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }
+
+  setupMobileNav();
+  document.addEventListener("astro:page-load", setupMobileNav);
+</script>
