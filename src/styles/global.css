@@ -247,3 +247,112 @@ html {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin: 3rem 0;
 }
+
+/* ═══════════════════════════════════════════════
+   Bloques de Código Estilo macOS Window
+   ═══════════════════════════════════════════════ */
+.whitepaper-code-window {
+  margin: 1.75rem 0;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #0c0c10;
+  overflow: hidden;
+}
+
+.whitepaper-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.whitepaper-code-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.whitepaper-code-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  opacity: 0.85;
+}
+
+.whitepaper-code-dot-close {
+  background-color: #ff5f56;
+}
+
+.whitepaper-code-dot-minimize {
+  background-color: #ffbd2e;
+}
+
+.whitepaper-code-dot-maximize {
+  background-color: #27c93f;
+}
+
+.whitepaper-code-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #a1a1aa;
+  letter-spacing: 0.02em;
+}
+
+.whitepaper-code-window pre {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 1.25rem !important;
+  background-color: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════
+   Tablas Desplegables con <details> y <summary>
+   ═══════════════════════════════════════════════ */
+.whitepaper-accordion {
+  margin: 1.75rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  background-color: rgba(18, 18, 21, 0.6);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.whitepaper-accordion:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.whitepaper-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: #fafafa;
+  background-color: #121215;
+  transition: background-color 0.15s ease;
+  list-style: none;
+}
+
+.whitepaper-summary::-webkit-details-marker {
+  display: none;
+}
+
+.whitepaper-summary:hover {
+  background-color: #18181d;
+}
+
+.whitepaper-accordion-content {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.whitepaper-accordion-content table {
+  margin: 0.5rem 0 !important;
+}
+
