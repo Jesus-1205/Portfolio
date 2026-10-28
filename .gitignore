@@ -25,3 +25,7 @@ pnpm-debug.log*
 
 # Specs documents
 specs/
+
+# Superpowers artifacts & plans
+.superpowers/
+docs/superpowers/
