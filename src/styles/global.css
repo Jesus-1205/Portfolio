@@ -85,3 +85,164 @@ html {
 .reveal-on-scroll {
   animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ═══════════════════════════════════════════════
+   Estilos Editoriales de Lectura Técnica (Whitepaper Prose)
+   ═══════════════════════════════════════════════ */
+.whitepaper-prose {
+  color: #d4d4d8; /* zinc-300 */
+  line-height: 1.75;
+}
+
+.whitepaper-prose h2 {
+  color: #fafafa;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 3rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: -0.02em;
+  scroll-margin-top: 6rem;
+}
+
+.whitepaper-prose h3 {
+  color: #f4f4f5;
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 6rem;
+}
+
+.whitepaper-prose h4 {
+  color: #e4e4e7;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 6rem;
+}
+
+.whitepaper-prose p {
+  margin-bottom: 1.25rem;
+}
+
+.whitepaper-prose strong {
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.whitepaper-prose ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.whitepaper-prose ul > li {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.whitepaper-prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.65rem;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 9999px;
+  background-color: #10b981;
+}
+
+.whitepaper-prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.whitepaper-prose blockquote {
+  border-left: 3px solid #10b981;
+  background-color: rgba(16, 185, 129, 0.05);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  border-radius: 0 0.75rem 0.75rem 0;
+  color: #d4d4d8;
+  font-style: normal;
+}
+
+.whitepaper-prose pre {
+  background-color: #0c0c0e !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.whitepaper-prose :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.375rem;
+  color: #38bdf8;
+}
+
+.whitepaper-prose table {
+  width: 100%;
+  margin: 2rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  font-size: 0.85rem;
+}
+
+.whitepaper-prose th {
+  background-color: #121215;
+  color: #fafafa;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}
+
+.whitepaper-prose td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background-color: rgba(18, 18, 21, 0.4);
+}
+
+.whitepaper-prose tr:last-child td {
+  border-bottom: none;
+}
+
+.whitepaper-prose img {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 1.5rem 0;
+  max-width: 100%;
+  height: auto;
+}
+
+.whitepaper-prose hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 3rem 0;
+}
