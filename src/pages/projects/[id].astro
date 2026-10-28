@@ -1,0 +1,54 @@
+---
+import { getCollection, render } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import Navbar from "../../components/Navbar.astro";
+import Footer from "../../components/Footer.astro";
+import WhitepaperHero from "../../components/whitepaper/WhitepaperHero.astro";
+import TableOfContents from "../../components/whitepaper/TableOfContents.astro";
+import ProjectNavigation from "../../components/whitepaper/ProjectNavigation.astro";
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  return projects.map((project, index) => {
+    const prev = index > 0 ? projects[index - 1] : null;
+    const next = index < projects.length - 1 ? projects[index + 1] : null;
+    return {
+      params: { id: project.id },
+      props: { project, prev, next },
+    };
+  });
+}
+
+const { project, prev, next } = Astro.props;
+const { Content, headings } = await render(project);
+---
+
+<Layout
+  title={`${project.data.title} — Especificación Técnica & Whitepaper`}
+  description={project.data.tagline}
+>
+  <Navbar />
+
+  <main class="max-w-6xl mx-auto px-4 pt-32 pb-20 w-full space-y-12">
+    <!-- Header del Whitepaper con métricas y títulos -->
+    <WhitepaperHero project={project} />
+
+    <!-- Split Layout: TOC adhesiva a la izquierda (4 cols), Contenido a la derecha (8 cols) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+      <!-- Columna Lateral Sticky -->
+      <div class="lg:col-span-4 order-2 lg:order-1">
+        <TableOfContents headings={headings} stack={project.data.stack} />
+      </div>
+
+      <!-- Columna de Lectura Técnica -->
+      <article class="lg:col-span-8 order-1 lg:order-2 whitepaper-prose">
+        <Content />
+      </article>
+    </div>
+
+    <!-- Paginación al siguiente proyecto -->
+    <ProjectNavigation prev={prev} next={next} />
+  </main>
+
+  <Footer />
+</Layout>

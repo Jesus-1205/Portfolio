@@ -361,7 +361,9 @@ La evolución de Taller-Admin de su versión inicial (v1 MVP) a la versión prod
 
 En la versión inicial, cargar la cuadrícula principal de órdenes ejecutaba una consulta inicial para recuperar las cabeceras, seguida de tres consultas adicionales por cada fila para obtener el vehículo, el cliente asociado y los mecánicos asignados. Para una página estándar de 100 órdenes, el servidor ejecutaba **301 consultas a la base de datos**:
 
-$$\text{Consultas} = 1 + 3N = 1 + 3(100) = 301$$
+```text
+Consultas = 1 + 3N = 1 + 3(100) = 301
+```
 
 En v2.0, el método `orden_service.get_all` fue reescrito para instruir al motor ORM a ejecutar precargas multinivel mediante un único `LEFT OUTER JOIN`:
 
