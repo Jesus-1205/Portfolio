@@ -85,9 +85,9 @@ mediaArtifacts:
       <span class="text-xs font-semibold text-white">Rotación de Propietarios</span>
       <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Snapshot Inmutable</span>
     </div>
-    <p class="text-xs text-neutral-400 leading-relaxed !my-0">
+    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
       Al transferir una placa a un nuevo cliente en Excel, se sobreescribían facturas pasadas. Se introdujo congelación de datos fiscales al emitir la orden para blindar la trazabilidad legal.
-    </p>
+    </div>
   </div>
 
   <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
@@ -95,9 +95,9 @@ mediaArtifacts:
       <span class="text-xs font-semibold text-white">Doble Numeración Operativa</span>
       <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Bahía vs Fiscal</span>
     </div>
-    <p class="text-xs text-neutral-400 leading-relaxed !my-0">
+    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
       Coexistencia entre boletas internas numeradas en foso por mecánicos y correlativos tributarios formales. El sistema desacopló ambas secuencias permitiendo servicios express inmediatos.
-    </p>
+    </div>
   </div>
 
   <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
@@ -105,9 +105,9 @@ mediaArtifacts:
       <span class="text-xs font-semibold text-white">Papelería Continua</span>
       <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Papelería 10/12 Renglones</span>
     </div>
-    <p class="text-xs text-neutral-400 leading-relaxed !my-0">
+    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
       Formatos preimpresos con límite físico rígido (10 renglones en Facturas, 12 en Notas). Se implementó particionamiento automático multipágina con reserva atómica de correlativos consecutivos.
-    </p>
+    </div>
   </div>
 
   <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
@@ -115,9 +115,9 @@ mediaArtifacts:
       <span class="text-xs font-semibold text-white">Deuda Técnica Legacy</span>
       <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">Datastore Híbrido</span>
     </div>
-    <p class="text-xs text-neutral-400 leading-relaxed !my-0">
+    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
       Ingestión ETL de +7.000 registros heredados de Excel sin normalización destructiva: almacén frío JSON (<code class="text-xs">historico_reconstruido</code>) para consulta histórica y base 3NF para transacciones en caliente.
-    </p>
+    </div>
   </div>
 </div>
 
@@ -167,7 +167,7 @@ La plataforma implementa el **Service Layer Pattern** para aislar estrictamente 
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -218,7 +218,7 @@ Secuencia de emisión atómica de una orden de trabajo con reserva de correlativ
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -266,7 +266,7 @@ En el patio operativo, las búsquedas continuas por placa o estatus podían gene
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -297,11 +297,12 @@ En el patio operativo, las búsquedas continuas por placa o estatus podían gene
       if (activeController) {
         activeController.abort();
       }
-      activeController = new AbortController();
+      const currentController = new AbortController();
+      activeController = currentController;
 
       try {
         const url = `/api/ordenes?q=${encodeURIComponent(query)}`;
-        const res = await fetch(url, { signal: activeController.signal });
+        const res = await fetch(url, { signal: currentController.signal });
 
         if (!res.ok) throw new Error(`HTTP error ${res.status}`);
         const data = await res.json();
@@ -314,7 +315,9 @@ En el patio operativo, las búsquedas continuas por placa o estatus podían gene
           console.error("Error al buscar órdenes:", err);
         }
       } finally {
-        activeController = null;
+        if (activeController === currentController) {
+          activeController = null;
+        }
       }
     }, 250);
   });
@@ -343,7 +346,7 @@ Los talonarios preimpresos disponen de cupos inalterables: 10 renglones útiles 
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -385,7 +388,7 @@ En un esquema 3NF estricto, una consulta a una orden lee el cliente mediante `Or
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -415,7 +418,7 @@ En cPanel y Phusion Passenger, el modo SQLite WAL (*Write-Ahead Logging*) genera
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -436,7 +439,7 @@ if _is_sqlite:
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -479,7 +482,7 @@ En la versión inicial, renderizar 100 órdenes disparaba **301 consultas a la b
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -512,7 +515,7 @@ En lugar de transferir registros a Python para bucles en memoria, `/api/mecanico
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots">
+    <div class="whitepaper-code-dots" aria-hidden="true">
       <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
@@ -574,7 +577,7 @@ La integridad transaccional y la validez contable del sistema se auditan periód
       <span class="text-emerald-400 font-semibold">Batería de Calidad:</span>
       <span>18 Scripts SQL de Diagnóstico y Aserciones Relacionales</span>
     </div>
-    <span class="text-xs text-neutral-400 font-mono">Ver tabla detallada [Desplegar] ↓</span>
+    <span class="text-xs text-neutral-400 font-mono">Ver tabla técnica detallada</span>
   </summary>
   <div class="whitepaper-accordion-content overflow-x-auto">
 
