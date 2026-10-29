@@ -90,25 +90,35 @@ mediaArtifacts:
     </div>
   </div>
 
-  <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
-    <div class="flex items-center justify-between">
-      <span class="text-xs font-semibold text-white">Doble Numeración Operativa</span>
-      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Bahía vs Fiscal</span>
-    </div>
-    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
-      Coexistencia entre boletas internas numeradas en foso por mecánicos y correlativos tributarios formales. El sistema desacopló ambas secuencias permitiendo servicios express inmediatos.
-    </div>
+<div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
+  <div class="flex items-center justify-between">
+    <span class="text-xs font-semibold text-white">
+      Doble Numeración Operativa
+    </span>
+    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+      Bahía vs Fiscal
+    </span>
   </div>
+  <div class="text-xs text-neutral-400 leading-relaxed !my-0">
+    Coexistencia entre boletas internas numeradas en foso por mecánicos y
+    correlativos tributarios formales. El sistema desacopló ambas secuencias
+    permitiendo servicios express inmediatos.
+  </div>
+</div>
 
-  <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
-    <div class="flex items-center justify-between">
-      <span class="text-xs font-semibold text-white">Papelería Continua</span>
-      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Papelería 10/12 Renglones</span>
-    </div>
-    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
-      Formatos preimpresos con límite físico rígido (10 renglones en Facturas, 12 en Notas). Se implementó particionamiento automático multipágina con reserva atómica de correlativos consecutivos.
-    </div>
+<div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
+  <div class="flex items-center justify-between">
+    <span class="text-xs font-semibold text-white">Papelería Continua</span>
+    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+      Papelería 10/12 Renglones
+    </span>
   </div>
+  <div class="text-xs text-neutral-400 leading-relaxed !my-0">
+    Formatos preimpresos con límite físico rígido (10 renglones en Facturas, 12
+    en Notas). Se implementó particionamiento automático multipágina con reserva
+    atómica de correlativos consecutivos.
+  </div>
+</div>
 
   <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
     <div class="flex items-center justify-between">
@@ -130,34 +140,38 @@ El entorno exigió además fijación de costos en USD con facturación y cobro e
 La interfaz se concibió bajo la premisa de un **Monolito SSR Ligero**: plantillas Jinja2 y componentes reactivos en **Vanilla JavaScript ES6+**, sin compiladores ni empaquetadores externos, con renderizado veloz y soporte nativo para impresión continua `@media print`.
 
 ### 1. Cuadrícula Reactiva de Órdenes y Búsqueda Operativa
+
 Búsqueda reactiva en tiempo real sobre miles de registros mediante filtrado instantáneo por placa y estatus.
 
 ![Cuadrícula operativa de órdenes](../../assets/projects/taller-admin/ordenes_grid.png)
-*Cuadrícula operativa: filtrado reactivo por placa y estatus en tiempo real (< 35 ms) con actualización dinámica sin recarga de página.*
+_Cuadrícula operativa: filtrado reactivo por placa y estatus en tiempo real (< 35 ms) con actualización dinámica sin recarga de página._
 
 ---
 
 ### 2. Módulo de Emisión Transaccional con Particionamiento Atómico
+
 Formulario ergonómico con autocompletado en caliente, sincronización cambiaria BCV y división automática de hojas fiscales.
 
 ![Módulo de emisión transaccional](../../assets/projects/taller-admin/nueva_orden.png)
-*Módulo de emisión: captura de servicios, cálculo bimoneda en divisa y bolívares, y particionamiento automático con create_split.*
+_Módulo de emisión: captura de servicios, cálculo bimoneda en divisa y bolívares, y particionamiento automático con create_split._
 
 ---
 
 ### 3. Inspección Detallada de Orden y Snapshots Inmutables
+
 Modal de inspección integral con congelación de titularidad de cliente/vehículo y rutinas de impresión continua milimétrica.
 
 ![Detalle de orden y congelación de snapshots](../../assets/projects/taller-admin/orden_modal.png)
-*Detalle expandido de orden: visualización de snapshots inmutables de cliente y vehículo para auditoría y despacho a papel continuo.*
+_Detalle expandido de orden: visualización de snapshots inmutables de cliente y vehículo para auditoría y despacho a papel continuo._
 
 ---
 
 ### 4. Dashboard Analítico de Rendimiento Laboral
+
 Panel gerencial con agregaciones SQL nativas para auditoría de mano de obra y repuestos discriminados por técnico.
 
 ![Dashboard analítico de rendimiento](../../assets/projects/taller-admin/mecanicos_stats.png)
-*Dashboard de productividad laboral: cálculo consolidado de órdenes ejecutadas y montos por mecánico computado en base de datos en menos de 20 ms.*
+_Dashboard de productividad laboral: cálculo consolidado de órdenes ejecutadas y montos por mecánico computado en base de datos en menos de 20 ms._
 
 ---
 
@@ -216,7 +230,7 @@ El desarrollo resolvió fricciones críticas que abarcan desde la reactividad en
 
 ### Reto 1: Búsqueda Reactiva con Debounce y Cancelación en Vuelo (Vanilla JS ES6+)
 
-En el patio operativo, las búsquedas continuas por placa o estatus podían generar ráfagas de peticiones desordenadas. Para garantizar una respuesta instantánea sin sobrecargar el servidor ni provocar condiciones de carrera en el DOM (*race conditions*), se implementó un controlador de búsqueda reactiva con **debounce de 250 ms** y descarte de solicitudes obsoletas mediante **`AbortController`**:
+En el patio operativo, las búsquedas continuas por placa o estatus podían generar ráfagas de peticiones desordenadas. Para garantizar una respuesta instantánea sin sobrecargar el servidor ni provocar condiciones de carrera en el DOM (_race conditions_), se implementó un controlador de búsqueda reactiva con **debounce de 250 ms** y descarte de solicitudes obsoletas mediante **`AbortController`**:
 
 <CodeWindow title="static/js/ordenes_search.js">
 
@@ -269,15 +283,19 @@ En el patio operativo, las búsquedas continuas por placa o estatus podían gene
   });
 
   function renderOrders(ordenes) {
-    tableBody.innerHTML = ordenes.map(o => `
+    tableBody.innerHTML = ordenes
+      .map(
+        (o) => `
       <tr class="hover:bg-neutral-800/40 transition-colors" data-id="${o.id_orden}">
-        <td class="font-mono text-emerald-400 font-semibold">${o.numero_impreso || 'S/N'}</td>
+        <td class="font-mono text-emerald-400 font-semibold">${o.numero_impreso || "S/N"}</td>
         <td class="font-mono">${o.placa_vehiculo}</td>
-        <td>${o.cliente_nombre || 'Desconocido'}</td>
+        <td>${o.cliente_nombre || "Desconocido"}</td>
         <td><span class="badge badge-${o.estatus.toLowerCase()}">${o.estatus}</span></td>
         <td class="text-right font-mono">$${Number(o.total_orden).toFixed(2)}</td>
       </tr>
-    `).join("");
+    `,
+      )
+      .join("");
   }
 })();
 ```
@@ -355,6 +373,7 @@ La confiabilidad del motor transaccional se valida mediante un dataset de répli
 ### Dataset Sintético de Alta Fidelidad (`Taller_DB_TEST_2026.db`)
 
 Para pruebas de regresión y verificación de márgenes sin exponer información sensible de clientes:
+
 - **16 Clientes Sintéticos:** Conforme al formato de identificación fiscal del SENIAT.
 - **48 Vehículos:** Variedad de marcas y modelos comerciales de alta rotación (Toyota, Chevrolet, Ford).
 - **8 Mecánicos:** Distribución de especialidades técnicas (motor, tren delantero, frenos y electricidad).

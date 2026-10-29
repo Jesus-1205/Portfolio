@@ -92,15 +92,19 @@ El sistema fue concebido y opera activamente en producción sobre un **servidor 
     </div>
   </div>
 
-  <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
-    <div class="flex items-center justify-between">
-      <span class="text-xs font-semibold text-white">Despacho Concurrente</span>
-      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Atajos F2/F10</span>
-    </div>
-    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
-      Operación con 250+ SKUs de alta rotación y 50-250 ventas diarias. Split payments combinados (efectivo, tarjeta, Pago Móvil) operables al 100% mediante teclado físico.
-    </div>
+<div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
+  <div class="flex items-center justify-between">
+    <span class="text-xs font-semibold text-white">Despacho Concurrente</span>
+    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+      Atajos F2/F10
+    </span>
   </div>
+  <div class="text-xs text-neutral-400 leading-relaxed !my-0">
+    Operación con 250+ SKUs de alta rotación y 50-250 ventas diarias. Split
+    payments combinados (efectivo, tarjeta, Pago Móvil) operables al 100%
+    mediante teclado físico.
+  </div>
+</div>
 
   <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
     <div class="flex items-center justify-between">
@@ -120,7 +124,8 @@ El sistema fue concebido y opera activamente en producción sobre un **servidor 
 Artefactos visuales y flujos de trabajo clave en funcionamiento real:
 
 ### 1. Terminal POS: Ergonomía de Teclado y Split Payments
-Navegación acelerada por atajos físicos (`F2`/`F10`), soporte para pagos divididos multimoneda y cola de espera (*Hold Queue*).
+
+Navegación acelerada por atajos físicos (`F2`/`F10`), soporte para pagos divididos multimoneda y cola de espera (_Hold Queue_).
 
 <VideoGif
   src="/assets/projects/yanesu/demo-pos-checkout"
@@ -128,11 +133,12 @@ Navegación acelerada por atajos físicos (`F2`/`F10`), soporte para pagos divid
 />
 
 ![Terminal de mostrador bimodal](../../assets/projects/yanesu/screenshot-pos.png)
-*Vista de mostrador: catálogo con filtrado instantáneo, precios simultáneos en USD/VES y estados de pedido.*
+_Vista de mostrador: catálogo con filtrado instantáneo, precios simultáneos en USD/VES y estados de pedido._
 
 ---
 
 ### 2. Ingestión Asistida de Facturas con IA Multimodal (Human-in-the-Loop)
+
 Pipeline con Google Gemini API que digitaliza facturas y notas de entrega físicas. Extrae metadatos y líneas de artículos, colocando los nombres originales como referencia visual directa sobre cada selector (`#1 BELMONT`) y habilitando un visor modal flotante del documento para cotejo manual instantáneo.
 
 <VideoGif
@@ -143,6 +149,7 @@ Pipeline con Google Gemini API que digitaliza facturas y notas de entrega físic
 ---
 
 ### 3. Rendimiento y Navegación Gerencial Post-Optimización
+
 Respuesta sub-100ms en tableros ejecutivos tras erradicar cuellos de botella N+1 en SQLAlchemy y delegar agregaciones a SQL nativo.
 
 <VideoGif
@@ -151,7 +158,7 @@ Respuesta sub-100ms en tableros ejecutivos tras erradicar cuellos de botella N+1
 />
 
 ![Panel de Reportes](../../assets/projects/yanesu/screenshot-analytics.png)
-*Panel de Reportes Gerenciales: consolidación analítica de ingresos brutos, costos de mercancía, margen de ganancia neta y distribución de ventas por períodos y métodos de pago.*
+_Panel de Reportes Gerenciales: consolidación analítica de ingresos brutos, costos de mercancía, margen de ganancia neta y distribución de ventas por períodos y métodos de pago._
 
 ---
 
@@ -193,14 +200,14 @@ El backend en Python 3.12 y FastAPI implementa una separación estricta para gar
 ### Decisiones de Arquitectura Registradas (ADRs)
 
 - **ADR-001: Cloud VPS con Docker Compose como Arquitectura Principal y Tauri 2 como Empaquetado Local**  
-  *Contexto:* La plataforma fue concebida primordialmente para despliegue en servidor VPS (acceso concurrente web, multiusuario y sincronización continua). Posteriormente se adaptó a Desktop para operar en entornos con requerimientos de aislamiento local.  
-  *Decisión:* Docker Compose orquestando Nginx, FastAPI y PostgreSQL 16 como núcleo de producción, y Tauri 2 con sidecar FastAPI y SQLite embebida como empaquetado secundario de escritorio sin bifurcar la base de código.
+  _Contexto:_ La plataforma fue concebida primordialmente para despliegue en servidor VPS (acceso concurrente web, multiusuario y sincronización continua). Posteriormente se adaptó a Desktop para operar en entornos con requerimientos de aislamiento local.  
+  _Decisión:_ Docker Compose orquestando Nginx, FastAPI y PostgreSQL 16 como núcleo de producción, y Tauri 2 con sidecar FastAPI y SQLite embebida como empaquetado secundario de escritorio sin bifurcar la base de código.
 - **ADR-002: Dualidad SQLite / PostgreSQL sin Bifurcación de Código**  
-  *Contexto:* Soporte para PostgreSQL 16 en VPS Cloud y SQLite en modo Desktop y suite de pruebas.  
-  *Decisión:* SQLAlchemy 2.0 unificado con Alembic en modo batch (`render_as_batch=True`) para aplicar migraciones relacionales idénticas en ambos motores.
+  _Contexto:_ Soporte para PostgreSQL 16 en VPS Cloud y SQLite en modo Desktop y suite de pruebas.  
+  _Decisión:_ SQLAlchemy 2.0 unificado con Alembic en modo batch (`render_as_batch=True`) para aplicar migraciones relacionales idénticas en ambos motores.
 - **ADR-003: Centralización de la Autoridad Financiera en el Backend**  
-  *Contexto:* Tipos `number` de JavaScript sufren de imprecisiones IEEE 754.  
-  *Decisión:* El frontend calcula subtotales solo para renderizado reactivo; el servidor FastAPI valida y sella los montos finales en `Decimal` antes del commit.
+  _Contexto:_ Tipos `number` de JavaScript sufren de imprecisiones IEEE 754.  
+  _Decisión:_ El frontend calcula subtotales solo para renderizado reactivo; el servidor FastAPI valida y sella los montos finales en `Decimal` antes del commit.
 
 ---
 
@@ -226,7 +233,7 @@ def quantize_currency(amount: Decimal | str) -> Decimal:
 
 </CodeWindow>
 
-Al distribuir un descuento global entre múltiples renglones, la sumatoria individual puede divergir por ±0.01 (*el dilema del centavo huérfano*). Para garantizar cuadre contable exacto, se implementó el **Largest Remainder Method (Hare-Niemeyer)**:
+Al distribuir un descuento global entre múltiples renglones, la sumatoria individual puede divergir por ±0.01 (_el dilema del centavo huérfano_). Para garantizar cuadre contable exacto, se implementó el **Largest Remainder Method (Hare-Niemeyer)**:
 
 <CodeWindow title="app/services/distribution.py">
 
@@ -268,7 +275,7 @@ def distribute_amount_exact(total_to_distribute: Decimal, weights: List[Decimal]
 ### Reto 2: Ingestión Asistida de Facturas: Human-in-the-Loop vs. Fuzzy Matching (Google Gemini API)
 
 **Problema:**  
-En el ecosistema comercial venezolano, las facturas y notas de entrega físicas emitidas por distribuidores mayoristas contienen descripciones sumamente heterogéneas, abreviaciones crípticas y jerga informal (*"BELMONT"*, *"CONSUL"*, *"LUCKY NOVA"*). Intentar resolver la concordancia de estos nombres contra el catálogo local mediante algoritmos de similitud de cadenas (*fuzzy matching* / distancia Levenshtein) provocó asociaciones erróneas con impactos destructivos en el stock de inventario.
+En el ecosistema comercial venezolano, las facturas y notas de entrega físicas emitidas por distribuidores mayoristas contienen descripciones sumamente heterogéneas, abreviaciones crípticas y jerga informal (_"BELMONT"_, _"CONSUL"_, _"LUCKY NOVA"_). Intentar resolver la concordancia de estos nombres contra el catálogo local mediante algoritmos de similitud de cadenas (_fuzzy matching_ / distancia Levenshtein) provocó asociaciones erróneas con impactos destructivos en el stock de inventario.
 
 **Solución Arquitectónica:**  
 Se descartó la vinculación automática a ciegas en favor de un flujo asistido **Human-in-the-Loop** de alta velocidad. El servicio `app/services/invoice_service.py` ejecuta **dos llamadas desacopladas a la API de Google Gemini** para erradicar alucinaciones cruzadas: una para extraer metadatos globales (proveedor, número de documento, fecha, moneda) y otra para extraer la lista secuencial de productos y precios.
@@ -283,7 +290,7 @@ def parse_invoice_with_ai(
     db: Session | None = None
 ) -> dict:
     """Procesa facturas físicas con Gemini mediante 2 llamadas desacopladas para evitar alucinaciones.
-    
+
     No aplica fuzzy matching: extrae texto exacto y delega la resolución asistida al usuario.
     """
     optimized_files = [optimize_image(b, ct) for b, ct in files]
@@ -370,10 +377,10 @@ En operaciones de alta rotación, levantar las manos hacia el ratón ralentiza e
 import { useEffect, useRef } from "react";
 
 interface PosKeyboardHandlers {
-  onSearchProduct?: () => void;   // F2: Catálogo instantáneo
-  onOpenCheckout?: () => void;    // F10: Modal de cobro rápido
-  onHoldOrder?: () => void;       // F9: Poner orden en espera (Hold)
-  onCancelOrClose?: () => void;   // Escape: Cancelar / Cerrar modal
+  onSearchProduct?: () => void; // F2: Catálogo instantáneo
+  onOpenCheckout?: () => void; // F10: Modal de cobro rápido
+  onHoldOrder?: () => void; // F9: Poner orden en espera (Hold)
+  onCancelOrClose?: () => void; // Escape: Cancelar / Cerrar modal
 }
 
 /**
@@ -392,7 +399,8 @@ export function usePosKeyboard(handlers: PosKeyboardHandlers) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const isInput = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA";
+      const isInput =
+        target?.tagName === "INPUT" || target?.tagName === "TEXTAREA";
 
       if (e.key === "F2") {
         e.preventDefault();
@@ -448,7 +456,11 @@ interface CartState {
   items: CartItem[];
   exchangeRateBcv: number;
   addItem: (product: Omit<CartItem, "quantity">, quantity?: number) => void;
-  updateQuantity: (id: string, packaging: PackagingType, quantity: number) => void;
+  updateQuantity: (
+    id: string,
+    packaging: PackagingType,
+    quantity: number,
+  ) => void;
   removeItem: (id: string, packaging: PackagingType) => void;
   clearCart: () => void;
   getTotals: () => CartTotals;
@@ -461,14 +473,14 @@ export const useCartStore = create<CartState>()((set, get) => ({
   addItem: (product, quantity = 1) => {
     set((state) => {
       const existing = state.items.find(
-        (i) => i.id === product.id && i.packaging === product.packaging
+        (i) => i.id === product.id && i.packaging === product.packaging,
       );
       if (existing) {
         return {
           items: state.items.map((i) =>
             i.id === product.id && i.packaging === product.packaging
               ? { ...i, quantity: i.quantity + quantity }
-              : i
+              : i,
           ),
         };
       }
@@ -478,17 +490,22 @@ export const useCartStore = create<CartState>()((set, get) => ({
 
   updateQuantity: (id, packaging, quantity) => {
     set((state) => ({
-      items: quantity <= 0
-        ? state.items.filter((i) => !(i.id === id && i.packaging === packaging))
-        : state.items.map((i) =>
-            i.id === id && i.packaging === packaging ? { ...i, quantity } : i
-          ),
+      items:
+        quantity <= 0
+          ? state.items.filter(
+              (i) => !(i.id === id && i.packaging === packaging),
+            )
+          : state.items.map((i) =>
+              i.id === id && i.packaging === packaging ? { ...i, quantity } : i,
+            ),
     }));
   },
 
   removeItem: (id, packaging) => {
     set((state) => ({
-      items: state.items.filter((i) => !(i.id === id && i.packaging === packaging)),
+      items: state.items.filter(
+        (i) => !(i.id === id && i.packaging === packaging),
+      ),
     }));
   },
 
@@ -496,8 +513,14 @@ export const useCartStore = create<CartState>()((set, get) => ({
 
   getTotals: () => {
     const { items, exchangeRateBcv } = get();
-    const subtotalUsd = items.reduce((acc, item) => acc + item.unitPriceUsd * item.quantity, 0);
-    const taxUsd = items.reduce((acc, item) => acc + item.unitPriceUsd * item.quantity * item.taxRate, 0);
+    const subtotalUsd = items.reduce(
+      (acc, item) => acc + item.unitPriceUsd * item.quantity,
+      0,
+    );
+    const taxUsd = items.reduce(
+      (acc, item) => acc + item.unitPriceUsd * item.quantity * item.taxRate,
+      0,
+    );
     const totalUsd = Math.round((subtotalUsd + taxUsd) * 100) / 100;
     const totalVes = Math.round(totalUsd * exchangeRateBcv * 100) / 100;
 
@@ -556,29 +579,29 @@ Los benchmarks ejecutados con `backend/scripts/benchmark_suite.py` confirman una
   </summary>
   <div class="whitepaper-accordion-content overflow-x-auto">
 
-| # | Endpoint / Operación Auditada | Latencia MVP | Latencia Optimizada (p50 / p95) | Reducción Latencia | Payload Original | Payload Optimizado | Impacto de Red |
-|---|-------------------------------|:------------:|:-------------------------------:|:------------------:|:----------------:|:------------------:|:--------------:|
-| 1 | `GET /api/dashboard/stats` | 185.40 ms | **15.20 ms / 21.40 ms** | **-91.8%** | 18.40 KB | 2.10 KB | -88.6% |
-| 2 | `GET /api/dashboard/categories/summary` | 142.10 ms | **18.60 ms / 24.50 ms** | **-86.9%** | 12.80 KB | 1.65 KB | -87.1% |
-| 3 | `GET /api/dashboard/suppliers/summary` | 168.30 ms | **21.30 ms / 28.90 ms** | **-87.3%** | 14.20 KB | 1.90 KB | -86.6% |
-| 4 | `GET /api/products` (Catálogo maestro) | 280.50 ms | **42.10 ms / 56.40 ms** | **-85.0%** | 68.40 KB | 14.20 KB | -79.2% |
-| 5 | `GET /api/products/{id}` | 24.50 ms | **6.10 ms / 8.90 ms** | **-75.1%** | 3.20 KB | 1.10 KB | -65.6% |
-| 6 | `POST /api/products` (Alta de SKU) | 48.60 ms | **16.40 ms / 22.80 ms** | **-66.3%** | 2.80 KB | 1.40 KB | -50.0% |
-| 7 | `GET /api/products/top-selling` | 194.20 ms | **24.80 ms / 31.00 ms** | **-87.2%** | 16.50 KB | 3.40 KB | -79.4% |
-| 8 | `GET /api/products/low-stock` | 115.80 ms | **14.90 ms / 20.10 ms** | **-87.1%** | 9.80 KB | 2.20 KB | -77.6% |
-| 9 | `GET /api/sales` (Historial paginado) | 312.40 ms | **54.20 ms / 69.80 ms** | **-82.6%** | 45.60 KB | 8.10 KB | -82.2% |
-| 10 | `POST /api/sales` (Checkout transaccional) | 165.80 ms | **38.50 ms / 49.20 ms** | **-76.8%** | 6.40 KB | 2.80 KB | -56.3% |
-| 11 | `GET /api/sales/{id}` (Recibo fiscal) | 36.40 ms | **9.20 ms / 12.80 ms** | **-74.7%** | 4.10 KB | 1.90 KB | -53.7% |
-| 12 | `GET /api/sales/summary?rango=dia` | 863.60 ms | **184.70 ms / 215.30 ms** | **-78.6%** | 58.20 KB | 5.40 KB | -90.7% |
-| 13 | `GET /api/sales/summary?rango=mes` | 1,420.00 ms | **240.10 ms / 295.40 ms** | **-83.1%** | 94.60 KB | 9.80 KB | -89.6% |
-| 14 | `GET /api/invoices?page=1` | 352.60 ms | **58.00 ms / 68.30 ms** | **-83.6%** | 51.82 KB | 7.86 KB | -84.8% |
-| 15 | `POST /api/invoices` (Ingestión asistida) | 520.00 ms | **110.40 ms / 145.20 ms** | **-78.8%** | 18.20 KB | 4.50 KB | -75.3% |
-| 16 | `GET /api/invoices/{id}` | 42.10 ms | **11.50 ms / 15.20 ms** | **-72.7%** | 5.60 KB | 2.10 KB | -62.5% |
-| 17 | `POST /api/invoices/{id}/payments` | 64.20 ms | **18.90 ms / 25.10 ms** | **-70.6%** | 3.80 KB | 1.60 KB | -57.9% |
-| 18 | `GET /api/exchange-rates/latest` | 18.20 ms | **4.20 ms / 6.10 ms** | **-76.9%** | 1.20 KB | 0.50 KB | -58.3% |
-| 19 | `GET /api/exchange-rates/stream` (Setup) | 150.00 ms | **6.80 ms / 9.50 ms** | **-95.5%** | Stream | Stream | — |
-| 20 | `POST /api/webhooks/bcv-sync` | 420.50 ms | **85.40 ms / 112.00 ms** | **-79.7%** | 4.20 KB | 1.10 KB | -73.8% |
-| 21 | `GET /api/retornables/summary` | 98.40 ms | **14.20 ms / 19.80 ms** | **-85.6%** | 8.90 KB | 1.80 KB | -79.8% |
+| #   | Endpoint / Operación Auditada              | Latencia MVP | Latencia Optimizada (p50 / p95) | Reducción Latencia | Payload Original | Payload Optimizado | Impacto de Red |
+| --- | ------------------------------------------ | :----------: | :-----------------------------: | :----------------: | :--------------: | :----------------: | :------------: |
+| 1   | `GET /api/dashboard/stats`                 |  185.40 ms   |     **15.20 ms / 21.40 ms**     |     **-91.8%**     |     18.40 KB     |      2.10 KB       |     -88.6%     |
+| 2   | `GET /api/dashboard/categories/summary`    |  142.10 ms   |     **18.60 ms / 24.50 ms**     |     **-86.9%**     |     12.80 KB     |      1.65 KB       |     -87.1%     |
+| 3   | `GET /api/dashboard/suppliers/summary`     |  168.30 ms   |     **21.30 ms / 28.90 ms**     |     **-87.3%**     |     14.20 KB     |      1.90 KB       |     -86.6%     |
+| 4   | `GET /api/products` (Catálogo maestro)     |  280.50 ms   |     **42.10 ms / 56.40 ms**     |     **-85.0%**     |     68.40 KB     |      14.20 KB      |     -79.2%     |
+| 5   | `GET /api/products/{id}`                   |   24.50 ms   |      **6.10 ms / 8.90 ms**      |     **-75.1%**     |     3.20 KB      |      1.10 KB       |     -65.6%     |
+| 6   | `POST /api/products` (Alta de SKU)         |   48.60 ms   |     **16.40 ms / 22.80 ms**     |     **-66.3%**     |     2.80 KB      |      1.40 KB       |     -50.0%     |
+| 7   | `GET /api/products/top-selling`            |  194.20 ms   |     **24.80 ms / 31.00 ms**     |     **-87.2%**     |     16.50 KB     |      3.40 KB       |     -79.4%     |
+| 8   | `GET /api/products/low-stock`              |  115.80 ms   |     **14.90 ms / 20.10 ms**     |     **-87.1%**     |     9.80 KB      |      2.20 KB       |     -77.6%     |
+| 9   | `GET /api/sales` (Historial paginado)      |  312.40 ms   |     **54.20 ms / 69.80 ms**     |     **-82.6%**     |     45.60 KB     |      8.10 KB       |     -82.2%     |
+| 10  | `POST /api/sales` (Checkout transaccional) |  165.80 ms   |     **38.50 ms / 49.20 ms**     |     **-76.8%**     |     6.40 KB      |      2.80 KB       |     -56.3%     |
+| 11  | `GET /api/sales/{id}` (Recibo fiscal)      |   36.40 ms   |     **9.20 ms / 12.80 ms**      |     **-74.7%**     |     4.10 KB      |      1.90 KB       |     -53.7%     |
+| 12  | `GET /api/sales/summary?rango=dia`         |  863.60 ms   |    **184.70 ms / 215.30 ms**    |     **-78.6%**     |     58.20 KB     |      5.40 KB       |     -90.7%     |
+| 13  | `GET /api/sales/summary?rango=mes`         | 1,420.00 ms  |    **240.10 ms / 295.40 ms**    |     **-83.1%**     |     94.60 KB     |      9.80 KB       |     -89.6%     |
+| 14  | `GET /api/invoices?page=1`                 |  352.60 ms   |     **58.00 ms / 68.30 ms**     |     **-83.6%**     |     51.82 KB     |      7.86 KB       |     -84.8%     |
+| 15  | `POST /api/invoices` (Ingestión asistida)  |  520.00 ms   |    **110.40 ms / 145.20 ms**    |     **-78.8%**     |     18.20 KB     |      4.50 KB       |     -75.3%     |
+| 16  | `GET /api/invoices/{id}`                   |   42.10 ms   |     **11.50 ms / 15.20 ms**     |     **-72.7%**     |     5.60 KB      |      2.10 KB       |     -62.5%     |
+| 17  | `POST /api/invoices/{id}/payments`         |   64.20 ms   |     **18.90 ms / 25.10 ms**     |     **-70.6%**     |     3.80 KB      |      1.60 KB       |     -57.9%     |
+| 18  | `GET /api/exchange-rates/latest`           |   18.20 ms   |      **4.20 ms / 6.10 ms**      |     **-76.9%**     |     1.20 KB      |      0.50 KB       |     -58.3%     |
+| 19  | `GET /api/exchange-rates/stream` (Setup)   |  150.00 ms   |      **6.80 ms / 9.50 ms**      |     **-95.5%**     |      Stream      |       Stream       |       —        |
+| 20  | `POST /api/webhooks/bcv-sync`              |  420.50 ms   |    **85.40 ms / 112.00 ms**     |     **-79.7%**     |     4.20 KB      |      1.10 KB       |     -73.8%     |
+| 21  | `GET /api/retornables/summary`             |   98.40 ms   |     **14.20 ms / 19.80 ms**     |     **-85.6%**     |     8.90 KB      |      1.80 KB       |     -79.8%     |
 
   </div>
 </details>
@@ -613,18 +636,19 @@ TOTAL CONSOLIDADO: 2.662 Casos de Prueba Automatizados
 
 ### Pirámide de Cobertura Consolidada
 
-| Capa / Subsistema | Herramientas & Frameworks | Archivos | Tests | Foco Técnico Evaluado |
-|---|---|:---:|:---:|---|
-| **Backend Core** | Pytest 8.3, HTTPX, Pydantic v2 | 48 | **972** | Transacciones atómicas, desempacado, precisión decimal, RBAC |
-| **Frontend Core** | Vitest 2.1, React Testing Library, jsdom | 249 | **1.690** | Renderizado POS, atajos de teclado, stores Zustand, formateadores |
-| **Integración CI** | GitHub Actions Pipeline | **297** | **2.662** | **100% aprobado en compilación y suites paralelas** |
+| Capa / Subsistema  | Herramientas & Frameworks                | Archivos |   Tests   | Foco Técnico Evaluado                                             |
+| ------------------ | ---------------------------------------- | :------: | :-------: | ----------------------------------------------------------------- |
+| **Backend Core**   | Pytest 8.3, HTTPX, Pydantic v2           |    48    |  **972**  | Transacciones atómicas, desempacado, precisión decimal, RBAC      |
+| **Frontend Core**  | Vitest 2.1, React Testing Library, jsdom |   249    | **1.690** | Renderizado POS, atajos de teclado, stores Zustand, formateadores |
+| **Integración CI** | GitHub Actions Pipeline                  | **297**  | **2.662** | **100% aprobado en compilación y suites paralelas**               |
 
 ### Aislamiento Riguroso y Casos Límite Auditados
 
 El aislamiento de base de datos en `conftest.py` descarta mocks compartidos:
+
 - **Bases Efímeras Aisladas:** Cada test genera un archivo temporal SQLite con `NamedTemporaryFile`, inyectado vía `app.dependency_overrides[get_db]` y destruido al concluir el caso.
 - **Validación Estricta de Decimales:** Rechazo HTTP 422 inmediato ante valores con más de 2 cifras fraccionarias en importes y fijación exacta de 4 decimales en tasas BCV.
-- **Desempaque Concurrente:** Verificación de atomicidad bajo peticiones simultáneas sobre unidades agotadas, impidiendo lecturas fantasma (*phantom reads*).
+- **Desempaque Concurrente:** Verificación de atomicidad bajo peticiones simultáneas sobre unidades agotadas, impidiendo lecturas fantasma (_phantom reads_).
 - **Control de Sobrepagos:** Respuesta HTTP 409 cuando los abonos superan el saldo adeudado en facturas de proveedores.
 
 ---
