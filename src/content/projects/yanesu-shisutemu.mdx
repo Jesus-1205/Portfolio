@@ -160,43 +160,28 @@ Respuesta sub-100ms en tableros ejecutivos tras erradicar cuellos de botella N+1
 
 ## 03. Arquitectura del Sistema & Topología Dual
 
-Para cumplir simultáneamente con los requisitos de independencia offline en mostrador y acceso gerencial remoto, se diseñó una arquitectura dual unificada basada en FastAPI y React:
+Para garantizar alta concurrencia multiusuario en administración remota y, simultáneamente, permitir aislamiento offline en terminales de mostrador, la plataforma implementa una arquitectura desacoplada basada en **FastAPI** y **React 19**, unificando dos entornos de despliegue sobre la misma base de código:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+  <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold text-white">Topología Cloud Multi-User</span>
+      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Producción Principal</span>
     </div>
-    <span class="whitepaper-code-title">deployment_topology.txt</span>
+    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
+      Servidor VPS orquestado con <strong>Docker Compose</strong>. Nginx Alpine actúa como Reverse Proxy SSL (:443) y sirve la SPA, enrutando <code>/api/</code> hacia FastAPI con pool de conexiones sobre <strong>PostgreSQL 16</strong> y motor de eventos <strong>n8n</strong>.
+    </div>
   </div>
 
-```text
-+-------------------------------------------------------------------------------------------------+
-|                               TOPOLOGÍAS DE DESPLIEGUE FLEXIBLES                                |
-+-------------------------------------------------------------------------------------------------+
-|                                                                                                 |
-|   TOPOLOGÍA A: CLOUD MULTI-USER (VPS / Docker Compose) │  TOPOLOGÍA B: DESKTOP STANDALONE (Tauri 2)  |
-|   [ Entorno Principal en Producción Activa ]            │  [ Entorno Secundario Híbrido / Local ]     |
-|                                                         │                                             |
-|   Navegador Web / Terminal Remota                       │  +---------------------------------------+  |
-|        │ HTTPS (:443)                                   │  | Ventana Nativa Tauri 2 (Rust Core)    |  |
-|        ▼                                                │  | +-----------------------------------+ |  |
-|   +─────────────────────────────────────+               │  | | React 19 SPA (WebView Local)      | |  |
-|   | Nginx Alpine (Reverse Proxy & SPA)  |               │  | +-----------------+-----------------+ |  |
-|   +──────────────────┬──────────────────+               │  |                   │ HTTP / Cookie     |  |
-|                      │ /api/ (Red Bridge)               │  |                   ▼                   |  |
-|                      ▼                                  │  | | FastAPI Server (Python Sidecar)   | |  |
-|   +─────────────────────────────────────+               │  | | - Dynamic Port: .port bridge      | |  |
-|   | FastAPI ASGI Server (Uvicorn)       |               │  | | - SQLite Embebida (yanesu.db)     | |  |
-|   | - PostgreSQL 16 (Pool Conexiones)   |               │  | | - Operación 100% Offline          | |  |
-|   | - n8n Automation Engine             |               │  | +-----------------------------------+ |  |
-|   +─────────────────────────────────────+               │  +---------------------------------------+  |
-|                                                                                                 |
-+-------------------------------------------------------------------------------------------------+
-```
-
+  <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold text-white">Topología Desktop Standalone</span>
+      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Edge Local</span>
+    </div>
+    <div class="text-xs text-neutral-400 leading-relaxed !my-0">
+      Empaquetado ligero con <strong>Tauri 2 (Rust)</strong> que ejecuta la SPA sobre el WebView del sistema operativo, comunicándose mediante bridge HTTP local con un sidecar de FastAPI acoplado a <strong>SQLite 3</strong> para operación 100% offline.
+    </div>
+  </div>
 </div>
 
 ### Separación de Responsabilidades en Cuatro Capas
