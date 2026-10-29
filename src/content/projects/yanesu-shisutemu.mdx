@@ -215,57 +215,54 @@ El backend en Python 3.12 y FastAPI implementa una separación estricta para gar
 
 Durante la concepción y despliegue del sistema se superaron cuatro retos de ingeniería de alta complejidad:
 
-### Reto 1: Mandato "Cero Floats" & Largest Remainder Method
+### Reto 1: Mandato "Cero Floats" & Precisión Financiera Decimal
 
-El estándar IEEE 754 introduce imprecisiones de coma flotante (`0.1 + 0.2 = 0.30000000000000004`) inaceptables al liquidar impuestos y prorratear descuentos. Queda terminantemente prohibido el tipo `float` en toda la plataforma: cada variable monetaria se procesa mediante `Decimal(str(monto))` bajo redondeo bancario `ROUND_HALF_UP`.
+El estándar IEEE 754 introduce imprecisiones de coma flotante (`0.1 + 0.2 = 0.30000000000000004`) inaceptables al liquidar transacciones e inventario. Queda terminantemente prohibido el tipo `float` en toda la capa transaccional: cada variable monetaria se valida en frontera con Pydantic v2 bajo coerción estricta a `Decimal` con escala fija de dos decimales (`decimal_places=2`):
 
-<CodeWindow title="app/core/currency.py">
+<CodeWindow title="backend/app/schemas/sale.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/main/backend/app/schemas/sale.py#L8-L38">
 
 ```python
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
+from typing import Literal
+from pydantic import BaseModel, ConfigDict, Field
 
-def quantize_currency(amount: Decimal | str) -> Decimal:
-    """Cuantiza un monto monetario a exactamente 2 cifras decimales usando ROUND_HALF_UP."""
-    if not isinstance(amount, Decimal):
-        amount = Decimal(str(amount))
-    return amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+class SaleItemCreate(BaseModel):
+    producto_id: int
+    tipo_empaque: Literal["UNIDAD", "CAJA"]
+    cantidad: int = Field(gt=0)
+    unidades_descontadas: int = Field(gt=0)
+    # Mandato Zero-Floats: Coerción y validación estricta a 2 decimales
+    precio_unitario_usd: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    iva_porcentaje: Decimal = Field(default=Decimal("16.00"), ge=0)
+
+class SalePaymentCreate(BaseModel):
+    metodo_pago_id: int
+    referencia: str | None = None
+    monto_usd: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2, ge=0)
+    monto_ves: Decimal = Field(default=Decimal("0.00"), max_digits=14, decimal_places=2, ge=0)
 ```
 
 </CodeWindow>
 
-Al distribuir un descuento global entre múltiples renglones, la sumatoria individual puede divergir por ±0.01 (_el dilema del centavo huérfano_). Para garantizar cuadre contable exacto, se implementó el **Largest Remainder Method (Hare-Niemeyer)**:
+Para blindar la integridad contable y prevenir regresiones en la API, la suite de pruebas automatizadas verifica que cualquier intento de enviar montos con más de dos cifras decimales resulte en rechazo HTTP 422 inmediato:
 
-<CodeWindow title="app/services/distribution.py">
+<CodeWindow title="backend/tests/test_decimal_precision.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/main/backend/tests/test_decimal_precision.py#L44-L68">
 
 ```python
-from decimal import Decimal, ROUND_FLOOR, ROUND_HALF_UP
-from typing import List
+class TestProductPriceDecimals:
+    """Verifica que los precios de producto rechazan decimales imprecisos."""
 
-def distribute_amount_exact(total_to_distribute: Decimal, weights: List[Decimal]) -> List[Decimal]:
-    """Distribuye un monto total entre ponderaciones garantizando suma exacta al centavo."""
-    total_weight = sum(weights)
-    if total_weight == Decimal("0"):
-        return [Decimal("0.00") for _ in weights]
+    def test_precio_unidad_two_decimals(self, client):
+        _login(client, _ADMIN)
+        resp = _create_product(client, precio_unidad_usd=25.50, precio_caja_usd=500)
+        assert resp.status_code == 201
+        assert resp.json()["precio_unidad_usd"] == "25.50"
 
-    # 1. Asignación base truncada al piso
-    exact_shares = [(w / total_weight) * total_to_distribute for w in weights]
-    floored_shares = [s.quantize(Decimal("0.01"), rounding=ROUND_FLOOR) for s in exact_shares]
-
-    # 2. Residuo fraccionario en céntimos
-    allocated_sum = sum(floored_shares)
-    remainder_cents = int((total_to_distribute - allocated_sum) * Decimal("100"))
-
-    # 3. Ordenamiento por mayor residuo y asignación de céntimos sobrantes
-    remainders = [(i, exact_shares[i] - floored_shares[i]) for i in range(len(weights))]
-    remainders.sort(key=lambda x: x[1], reverse=True)
-
-    results = list(floored_shares)
-    for i in range(remainder_cents):
-        idx = remainders[i][0]
-        results[idx] += Decimal("0.01")
-
-    assert sum(results) == total_to_distribute, "La sumatoria debe cuadrar al centavo"
-    return results
+    def test_precio_unidad_rejects_four_decimals(self, client):
+        _login(client, _ADMIN)
+        # Rechazo HTTP 422 inmediato si se envían flotantes o más de 2 cifras decimales
+        resp = _create_product(client, precio_unidad_usd=25.1234, precio_caja_usd=500)
+        assert resp.status_code == 422
 ```
 
 </CodeWindow>
@@ -278,37 +275,43 @@ def distribute_amount_exact(total_to_distribute: Decimal, weights: List[Decimal]
 En el ecosistema comercial venezolano, las facturas y notas de entrega físicas emitidas por distribuidores mayoristas contienen descripciones sumamente heterogéneas, abreviaciones crípticas y jerga informal (_"BELMONT"_, _"CONSUL"_, _"LUCKY NOVA"_). Intentar resolver la concordancia de estos nombres contra el catálogo local mediante algoritmos de similitud de cadenas (_fuzzy matching_ / distancia Levenshtein) provocó asociaciones erróneas con impactos destructivos en el stock de inventario.
 
 **Solución Arquitectónica:**  
-Se descartó la vinculación automática a ciegas en favor de un flujo asistido **Human-in-the-Loop** de alta velocidad. El servicio `app/services/invoice_service.py` ejecuta **dos llamadas desacopladas a la API de Google Gemini** para erradicar alucinaciones cruzadas: una para extraer metadatos globales (proveedor, número de documento, fecha, moneda) y otra para extraer la lista secuencial de productos y precios.
+Se descartó la vinculación automática a ciegas en favor de un flujo asistido **Human-in-the-Loop** de alta velocidad. El servicio `backend/app/services/invoice_service.py` ejecuta **dos llamadas desacopladas a la API de Google Gemini** para erradicar alucinaciones cruzadas: una para extraer metadatos globales (proveedor, número de documento, fecha, moneda) y otra para extraer la lista secuencial de productos y precios.
 
 En la interfaz (React 19), los valores numéricos y fechas se precargan en inputs editables, mientras que la descripción textual original extraída por la IA se proyecta como **etiqueta de referencia visual fija arriba del selector** (`#1 BELMONT`, `#2 CONSUL`). Esto permite al usuario cotejar y vincular en segundos el producto exacto en su base de datos (`Buscar producto...`), con la posibilidad de hacer clic en la miniatura para inspeccionar la factura física en un modal ligero flotante sin cambiar de pestaña.
 
-<CodeWindow title="app/services/invoice_service.py">
+<CodeWindow title="backend/app/services/invoice_service.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/main/backend/app/services/invoice_service.py#L504-L541">
 
 ```python
-def parse_invoice_with_ai(
+def analyze_invoice_from_image(
+    db: Session,
     files: list[tuple[bytes, str]],
-    db: Session | None = None
-) -> dict:
-    """Procesa facturas físicas con Gemini mediante 2 llamadas desacopladas para evitar alucinaciones.
+) -> InvoiceAnalysisOut:
+    """Punto de entrada principal: analiza factura con Gemini API sin alucinaciones.
 
-    No aplica fuzzy matching: extrae texto exacto y delega la resolución asistida al usuario.
+    Ejecuta DOS requests desacoplados con presupuestos de tokens independientes:
+      1. Metadata: proveedor, factura, fecha, moneda (max_output_tokens=300)
+      2. Productos: nombres impresos, cantidades y precios (max_output_tokens=2000)
     """
-    optimized_files = [optimize_image(b, ct) for b, ct in files]
+    # 1. Optimización y compresión de imagen previa al envío
+    optimized_files: list[tuple[bytes, str]] = []
+    for file_bytes, content_type in files:
+        opt_bytes, opt_type = optimize_image(file_bytes, content_type)
+        optimized_files.append((opt_bytes, opt_type))
 
-    # Request 1: Metadatos globales con token budget reducido (Proveedor, Nº, Fecha, Moneda)
+    # 2. Request 1: Metadatos globales
     metadata = _call_gemini(
         optimized_files,
         INVOICE_METADATA_PROMPT,
-        "Extrae metadatos: proveedor, número, fecha, moneda, tipo de documento.",
+        "Extrae el nombre del proveedor, número de factura, fecha y moneda de esta factura.",
         max_output_tokens=300,
         db=db,
     )
 
-    # Request 2: Renglones físicos secuenciales (Nombre impreso, Cantidad, Precio)
+    # 3. Request 2: Líneas de productos secuenciales
     productos_data = _call_gemini(
         optimized_files,
         INVOICE_PRODUCTS_PROMPT,
-        "Extrae lista de productos en el orden exacto en que aparecen en la factura.",
+        "Extrae la lista de productos con sus cantidades y precios de esta factura.",
         max_output_tokens=2000,
         db=db,
     )
@@ -327,7 +330,7 @@ def parse_invoice_with_ai(
 
 Para sincronizar la cotización del BCV en tiempo real mediante Server-Sent Events sin agotar el pool de SQLAlchemy (`QueuePool`), se aisló la consulta inicial a un destello de menos de 10 ms, cerrando la sesión antes de entrar al bucle asíncrono del evento:
 
-<CodeWindow title="app/routes/exchange_rates.py">
+<CodeWindow title="backend/app/routes/exchange_rates.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/main/backend/app/routes/exchange_rates.py#L54-L89">
 
 ```python
 @router.get("/exchange-rates/stream")
@@ -369,167 +372,134 @@ async def stream_exchange_rates(
 
 ### Reto 4: Ergonomía de Mostrador & Estado Global Bimoneda (React 19 + TypeScript + Zustand 5)
 
-En operaciones de alta rotación, levantar las manos hacia el ratón ralentiza el despacho. Toda la experiencia de mostrador se gobierna mediante atajos de teclado físico (`F2` catálogo, `F10` cobro, `F9` orden en espera, `Escape` cancelar). Para evitar que los listeners globales provoquen re-renderizados continuos en el árbol de componentes, se implementó el hook `usePosKeyboard` utilizando referencias mutables desacopladas del ciclo de render:
+En operaciones de alta rotación, levantar las manos hacia el ratón ralentiza el despacho. Toda la experiencia de mostrador se gobierna mediante atajos de teclado físico (`F2` catálogo, `F9` vaciar carrito, `F10` cobro, `Escape` cancelar o limpiar búsqueda). Se encapsuló la lógica de captura global en el custom hook `usePosKeyboard`:
 
-<CodeWindow title="frontend/src/features/sales/hooks/usePosKeyboard.ts">
+<CodeWindow title="frontend/src/features/sales/hooks/usePosKeyboard.ts" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/main/frontend/src/features/sales/hooks/usePosKeyboard.ts#L5-L56">
 
 ```typescript
-import { useEffect, useRef } from "react";
+import { useEffect, type RefObject } from "react";
+import { useCartStore } from "../store/cartStore";
+import { useToast } from "@/ui-components/Toast";
 
-interface PosKeyboardHandlers {
-  onSearchProduct?: () => void; // F2: Catálogo instantáneo
-  onOpenCheckout?: () => void; // F10: Modal de cobro rápido
-  onHoldOrder?: () => void; // F9: Poner orden en espera (Hold)
-  onCancelOrClose?: () => void; // Escape: Cancelar / Cerrar modal
-}
-
-/**
- * Hook de bajo nivel para captura ergonómica de atajos físicos en mostrador.
- * Utiliza referencias mutables para desacoplar el listener global del ciclo de
- * renderizado de UI, eliminando listeners zombis y recargas de árbol.
- */
-export function usePosKeyboard(handlers: PosKeyboardHandlers) {
-  const handlersRef = useRef<PosKeyboardHandlers>(handlers);
-
-  // Sincronizar handlers en caliente sin re-adjuntar el listener al DOM
-  useEffect(() => {
-    handlersRef.current = handlers;
-  }, [handlers]);
+export function usePosKeyboard(
+  searchRef: RefObject<HTMLInputElement | null>,
+  onCheckout: () => void,
+  checkoutOpen: boolean,
+  onCloseCheckout: () => void,
+) {
+  const clearCart = useCartStore((s) => s.clearCart);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const isInput =
-        target?.tagName === "INPUT" || target?.tagName === "TEXTAREA";
-
+    const handler = (e: KeyboardEvent) => {
       if (e.key === "F2") {
         e.preventDefault();
-        handlersRef.current.onSearchProduct?.();
-      } else if (e.key === "F10") {
+        searchRef.current?.focus();
+        return;
+      }
+      if (e.key === "F9") {
         e.preventDefault();
-        handlersRef.current.onOpenCheckout?.();
-      } else if (e.key === "F9") {
+        clearCart();
+        toast("Carrito vaciado", "success");
+        return;
+      }
+      if (e.key === "F10") {
         e.preventDefault();
-        handlersRef.current.onHoldOrder?.();
-      } else if (e.key === "Escape" && !isInput) {
-        e.preventDefault();
-        handlersRef.current.onCancelOrClose?.();
+        onCheckout();
+        return;
+      }
+      if (e.key === "Escape") {
+        if (checkoutOpen) {
+          onCloseCheckout();
+          return;
+        }
+        if (document.activeElement === searchRef.current) {
+          (searchRef.current as HTMLInputElement).value = "";
+          searchRef.current?.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        return;
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [searchRef, onCheckout, checkoutOpen, onCloseCheckout, clearCart, toast]);
 }
 ```
 
 </CodeWindow>
 
-A su vez, el estado reactivo del carrito en `cartStore.ts` discrimina presentaciones (`UNIDAD` vs `CAJA`), calculando subtotales, alícuotas impositivas (IVA 16%) y conversión bimoneda inmediata a tasa oficial BCV:
+A su vez, el estado reactivo del carrito en `cartStore.ts` discrimina presentaciones (`UNIDAD` vs `CAJA`), calculando subtotales, alícuotas impositivas (IVA 16% o exento) y congelando un snapshot de la tasa oficial BCV al añadir el primer artículo para garantizar consistencia durante la transacción:
 
-<CodeWindow title="frontend/src/features/sales/stores/cartStore.ts">
+<CodeWindow title="frontend/src/features/sales/store/cartStore.ts" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/main/frontend/src/features/sales/store/cartStore.ts#L40-L119">
 
 ```typescript
 import { create } from "zustand";
+import type { ProductOut } from "@/types/api";
+import { useExchangeRateStore } from "@/stores/exchangeRateStore";
 
-export type PackagingType = "UNIDAD" | "CAJA";
-
-export interface CartItem {
-  id: string;
-  name: string;
-  sku: string;
-  packaging: PackagingType;
-  unitsPerBox: number;
-  quantity: number;
-  unitPriceUsd: number;
-  taxRate: number; // e.g. 0.16 para IVA 16%
+function computeTotals(items: Record<string, CartItem>): CartTotals {
+  const acc = { monto_exento_usd: 0, base_imponible_usd: 0, monto_iva_usd: 0 };
+  for (const item of Object.values(items)) {
+    const subtotal = Math.round(item.cantidad * item.precio_unitario_usd * 100) / 100;
+    if (item.tipo_iva === "EXENTO") {
+      acc.monto_exento_usd += subtotal;
+    } else {
+      acc.base_imponible_usd += subtotal;
+      acc.monto_iva_usd += Math.round(subtotal * item.iva_porcentaje) / 100;
+    }
+  }
+  return {
+    monto_exento_usd: Math.round(acc.monto_exento_usd * 100) / 100,
+    base_imponible_usd: Math.round(acc.base_imponible_usd * 100) / 100,
+    monto_iva_usd: Math.round(acc.monto_iva_usd * 100) / 100,
+  };
 }
 
-interface CartTotals {
-  subtotalUsd: number;
-  taxUsd: number;
-  totalUsd: number;
-  totalVes: number;
-}
+export const useCartStore = create<CartState>((set, get) => ({
+  items: {},
+  snapshotTasa: 0,
 
-interface CartState {
-  items: CartItem[];
-  exchangeRateBcv: number;
-  addItem: (product: Omit<CartItem, "quantity">, quantity?: number) => void;
-  updateQuantity: (
-    id: string,
-    packaging: PackagingType,
-    quantity: number,
-  ) => void;
-  removeItem: (id: string, packaging: PackagingType) => void;
-  clearCart: () => void;
-  getTotals: () => CartTotals;
-}
+  addItem: (product, tipo_empaque, cantidad = 1) => {
+    const state = get();
+    const cartItemId = `${product.id}_${tipo_empaque}`;
+    const precio = tipo_empaque === "UNIDAD"
+      ? Number(product.precio_unidad_usd)
+      : Number(product.precio_caja_usd);
+    const iva = product.tipo_iva === "GRAVADO" ? 16 : 0;
 
-export const useCartStore = create<CartState>()((set, get) => ({
-  items: [],
-  exchangeRateBcv: 1.0,
-
-  addItem: (product, quantity = 1) => {
-    set((state) => {
-      const existing = state.items.find(
-        (i) => i.id === product.id && i.packaging === product.packaging,
-      );
-      if (existing) {
-        return {
-          items: state.items.map((i) =>
-            i.id === product.id && i.packaging === product.packaging
-              ? { ...i, quantity: i.quantity + quantity }
-              : i,
-          ),
-        };
-      }
-      return { items: [...state.items, { ...product, quantity }] };
-    });
-  },
-
-  updateQuantity: (id, packaging, quantity) => {
-    set((state) => ({
-      items:
-        quantity <= 0
-          ? state.items.filter(
-              (i) => !(i.id === id && i.packaging === packaging),
-            )
-          : state.items.map((i) =>
-              i.id === id && i.packaging === packaging ? { ...i, quantity } : i,
-            ),
-    }));
-  },
-
-  removeItem: (id, packaging) => {
-    set((state) => ({
-      items: state.items.filter(
-        (i) => !(i.id === id && i.packaging === packaging),
-      ),
-    }));
-  },
-
-  clearCart: () => set({ items: [] }),
-
-  getTotals: () => {
-    const { items, exchangeRateBcv } = get();
-    const subtotalUsd = items.reduce(
-      (acc, item) => acc + item.unitPriceUsd * item.quantity,
-      0,
-    );
-    const taxUsd = items.reduce(
-      (acc, item) => acc + item.unitPriceUsd * item.quantity * item.taxRate,
-      0,
-    );
-    const totalUsd = Math.round((subtotalUsd + taxUsd) * 100) / 100;
-    const totalVes = Math.round(totalUsd * exchangeRateBcv * 100) / 100;
-
-    return {
-      subtotalUsd: Math.round(subtotalUsd * 100) / 100,
-      taxUsd: Math.round(taxUsd * 100) / 100,
-      totalUsd,
-      totalVes,
-    };
+    const existing = state.items[cartItemId];
+    if (existing) {
+      const newCantidad = existing.cantidad + cantidad;
+      const newUnidades = tipo_empaque === "CAJA"
+        ? newCantidad * product.unidades_por_caja
+        : newCantidad;
+      set({
+        items: {
+          ...state.items,
+          [cartItemId]: { ...existing, cantidad: newCantidad, unidades_descontadas: newUnidades },
+        },
+      });
+    } else {
+      const isEmpty = Object.keys(state.items).length === 0;
+      const unidades = tipo_empaque === "CAJA" ? cantidad * product.unidades_por_caja : cantidad;
+      const newItem: CartItem = {
+        cartItemId,
+        producto_id: product.id,
+        nombre: product.nombre,
+        tipo_empaque,
+        cantidad,
+        unidades_por_caja: product.unidades_por_caja,
+        unidades_descontadas: unidades,
+        precio_unitario_usd: precio,
+        iva_porcentaje: iva,
+        tipo_iva: product.tipo_iva,
+      };
+      set({
+        items: { ...state.items, [cartItemId]: newItem },
+        snapshotTasa: isEmpty ? useExchangeRateStore.getState().tasa : state.snapshotTasa,
+      });
+    }
   },
 }));
 ```
@@ -542,25 +512,38 @@ export const useCartStore = create<CartState>()((set, get) => ({
 
 En la fase inicial (MVP), la reportería gerencial (`/sales/summary`) iteraba registros en memoria con bucles `for` en Python, elevando los tiempos a **863.60 ms** con cargas de red superiores a **50 KB**. Además, en Windows existía una penalización de **2.05 s** al resolver `localhost` por intentos fallidos sobre IPv6 (`::1`) antes de caer a IPv4.
 
-Bajo la disciplina de **Spec-Driven Development (SDD)**, se especificó y ejecutó la migración hacia agregaciones relacionales agrupadas con `func.sum()` delegadas directamente a PostgreSQL y SQLite:
+Bajo la disciplina de **Spec-Driven Development (SDD)**, se especificó y ejecutó la migración hacia agregaciones relacionales agrupadas con subconsultas y `func.sum()` delegadas directamente al motor relacional:
 
-<CodeWindow title="app/services/dashboard_service.py">
+<CodeWindow title="backend/app/services/category_service.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/main/backend/app/services/category_service.py#L85-L108">
 
 ```python
-# Push-down SQL: Delegación del cómputo de costos y márgenes al motor de base de datos
-stmt = (
-    select(
-        func.sum(SaleItem.cantidad * SaleItem.precio_unitario_usd).label("ingreso_bruto_usd"),
-        func.sum(SaleItem.cantidad * Product.precio_costo_usd).label("costo_total_usd"),
-        func.sum(
-            (SaleItem.precio_unitario_usd - Product.precio_costo_usd) * SaleItem.cantidad
-        ).label("utilidad_bruta_usd")
-    )
-    .join(Product, SaleItem.producto_id == Product.id)
-    .join(Sale, SaleItem.venta_id == Sale.id)
-    .where(Sale.fecha_venta >= fecha_inicio, Sale.fecha_venta <= fecha_fin)
-)
-metricas = db.execute(stmt).first()
+def get_category_analytics(db: Session) -> CategoryAnalyticsResponse:
+    """Push-down SQL: Delegación del cómputo de stock, ventas e ingresos al motor relacional."""
+    
+    # 1. Agregación relacional de stock por categoría
+    ps = (
+        select(
+            producto_categoria.c.categoria_id,
+            func.count(Product.id).label("total_productos"),
+            func.coalesce(func.sum(Product.stock_unidades), 0).label("stock_total"),
+        )
+        .select_from(producto_categoria)
+        .join(Product, Product.id == producto_categoria.c.producto_id)
+        .group_by(producto_categoria.c.categoria_id)
+    ).subquery()
+
+    # 2. Agregación de ingresos y unidades vendidas sin bucles en Python
+    ss = (
+        select(
+            producto_categoria.c.categoria_id,
+            func.coalesce(func.sum(SaleItem.unidades_descontadas), 0).label("unidades_vendidas"),
+            func.coalesce(func.sum(SaleItem.subtotal_usd), 0).label("ingresos_usd"),
+        )
+        .select_from(producto_categoria)
+        .join(Product, Product.id == producto_categoria.c.producto_id)
+        .outerjoin(SaleItem, SaleItem.producto_id == Product.id)
+        .group_by(producto_categoria.c.categoria_id)
+    ).subquery()
 ```
 
 </CodeWindow>
@@ -658,6 +641,6 @@ El aislamiento de base de datos en `conftest.py` descarta mocks compartidos:
 El despliegue productivo de **Yanesu Shisutemu** demuestra que las restricciones operativas del comercio real (bimonetariedad asimétrica, catálogos extensos y documentos físicos informales) se resuelven mediante arquitectura rigurosa y diseño centrado en el usuario:
 
 1. **Flexibilidad Arquitectónica (Cloud VPS + Desktop Híbrido):** La orquestación con Docker Compose en servidor VPS centraliza la operación y analítica en tiempo real para múltiples terminales web, mientras que el soporte desacoplado para Tauri 2 asegura continuidad operativa local para clientes que requieran aislamiento sin bifurcar la base de código.
-2. **Garantía Contable Inmutable:** El mandato "Zero-Floats" con `Decimal`, redondeo `ROUND_HALF_UP` y el método Hare-Niemeyer garantizan cero descuadres de caja, respaldados por 2.662 pruebas automatizadas.
+2. **Garantía Contable Inmutable:** El mandato "Zero-Floats" con `Decimal` y validación estricta de escala en Pydantic v2 garantizan cero descuadres de caja, respaldados por 2.662 pruebas automatizadas.
 3. **Telemetría y Push-down SQL:** La refactorización analítica redujo la latencia media en un -65.8% y el tráfico en un -76.3%, delegando el trabajo pesado de costos y márgenes al motor relacional mediante SQLAlchemy 2.0.
 4. **Inteligencia Práctica (Human-in-the-Loop):** La integración de visión multimodal con Gemini API resolvió el cuello de botella de compras sin caer en las trampas del fuzzy match ante la jerga informal de notas de entrega, reduciendo drásticamente los tiempos de carga de inventario con un cotejo asistido de alta precisión.
