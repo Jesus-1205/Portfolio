@@ -232,7 +232,7 @@ El desarrollo resolvió fricciones críticas que abarcan desde la reactividad en
 
 En el patio operativo, las búsquedas continuas por placa, tipo o rango de fechas podían saturar el servidor con peticiones innecesarias en cada pulsación. Para garantizar una respuesta instantánea y fluida sin dependencias de frameworks ni librerías externas, se implementó una función de utilidad nativa con **debounce de 350 ms** y filtrado reactivo en Vanilla JS que actualiza dinámicamente el grid de órdenes:
 
-<CodeWindow title="static/js/ordenes.js" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/main/static/js/ordenes.js#L24-L43">
+<CodeWindow title="static/js/ordenes.js" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/master/static/js/ordenes.js#L20-L39">
 
 ```javascript
 /**
@@ -283,7 +283,7 @@ async function loadOrdenes(page = 1) {
 
 Los talonarios preimpresos disponen de cupos inalterables: 10 renglones útiles en Facturas y 12 en Notas de Entrega. Cuando una reparación sobrepasa dicho límite, `orden_service.create_split` calcula la partición necesaria (`chunks = ceil(total_items / limite_renglones)`) y adquiere un **bloqueo pesimista** sobre la secuencia para reservar correlativos continuos sin colisiones:
 
-<CodeWindow title="app/services/orden_service.py" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/main/app/services/orden_service.py#L216-L253">
+<CodeWindow title="app/services/orden_service.py" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/master/app/services/orden_service.py#L216-L253">
 
 ```python
 def create_split(db: Session, data: schemas.OrdenCreate) -> list:
@@ -343,7 +343,7 @@ Sin embargo, en el mundo real de un taller automotriz, los vehículos cambian de
 
 Para garantizar la inmutabilidad legal sin renunciar a la normalización para operaciones cotidianas, se implementó una **desnormalización intencional**: al emitir la orden en `orden_service.py`, se capturan y congelan en columnas dedicadas (`cli_nombre`, `cli_rif`, `veh_modelo`) los datos fiscales vigentes en ese instante exacto. El modelo ORM expone una propiedad híbrida con fallback transparente:
 
-<CodeWindow title="app/models.py" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/main/app/models.py#L114-L146">
+<CodeWindow title="app/models.py" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/master/app/models.py#L114-L146">
 
 ```python
 class Orden(Base):
