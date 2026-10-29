@@ -1,0 +1,19 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="whitepaper-code-window">
+  <div class="whitepaper-code-header">
+    <div class="whitepaper-code-dots" aria-hidden="true">
+      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
+      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
+      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
+    </div>
+    {title && <span class="whitepaper-code-title">{title}</span>}
+  </div>
+  <slot />
+</div>
