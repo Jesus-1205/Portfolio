@@ -228,76 +228,51 @@ Para operar de inmediato sin sobrecostos de hosting, la plataforma se desplegó 
 
 El desarrollo resolvió fricciones críticas que abarcan desde la reactividad en el frontend del navegador hasta la consistencia transaccional en el motor relacional:
 
-### Reto 1: Búsqueda Reactiva con Debounce y Cancelación en Vuelo (Vanilla JS ES6+)
+### Reto 1: Búsqueda Reactiva con Debounce (Vanilla JS ES6+)
 
-En el patio operativo, las búsquedas continuas por placa o estatus podían generar ráfagas de peticiones desordenadas. Para garantizar una respuesta instantánea sin sobrecargar el servidor ni provocar condiciones de carrera en el DOM (_race conditions_), se implementó un controlador de búsqueda reactiva con **debounce de 250 ms** y descarte de solicitudes obsoletas mediante **`AbortController`**:
+En el patio operativo, las búsquedas continuas por placa, tipo o rango de fechas podían saturar el servidor con peticiones innecesarias en cada pulsación. Para garantizar una respuesta instantánea y fluida sin dependencias de frameworks ni librerías externas, se implementó una función de utilidad nativa con **debounce de 350 ms** y filtrado reactivo en Vanilla JS que actualiza dinámicamente el grid de órdenes:
 
-<CodeWindow title="static/js/ordenes_search.js">
+<CodeWindow title="static/js/ordenes.js" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/main/static/js/ordenes.js#L24-L43">
 
 ```javascript
 /**
- * static/js/ordenes_search.js
- * Búsqueda reactiva con debounce nativo (250 ms) y cancelación de peticiones en vuelo.
+ * static/js/ordenes.js & app.js
+ * Búsqueda reactiva con debounce de 350 ms y renderizado dinámico sin frameworks.
  */
-(() => {
-  const searchInput = document.getElementById("ordenes-search-input");
-  const tableBody = document.getElementById("ordenes-table-body");
-  const countBadge = document.getElementById("ordenes-count-badge");
-  let debounceTimer = null;
-  let activeController = null;
 
-  if (!searchInput || !tableBody) return;
+// Utilidad nativa de debounce en static/js/app.js
+function debounce(fn, ms = 300) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
 
-  searchInput.addEventListener("input", (e) => {
-    const query = e.target.value.trim();
-    clearTimeout(debounceTimer);
-
-    debounceTimer = setTimeout(async () => {
-      // 1. Cancelar cualquier petición previa aún en tránsito
-      if (activeController) {
-        activeController.abort();
-      }
-      const currentController = new AbortController();
-      activeController = currentController;
-
-      try {
-        const url = `/api/ordenes?q=${encodeURIComponent(query)}`;
-        const res = await fetch(url, { signal: currentController.signal });
-
-        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-        const data = await res.json();
-
-        // 2. Renderizado reactivo sin recarga de página (< 35 ms)
-        renderOrders(data.ordenes);
-        if (countBadge) countBadge.textContent = `${data.total} órdenes`;
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Error al buscar órdenes:", err);
-        }
-      } finally {
-        if (activeController === currentController) {
-          activeController = null;
-        }
-      }
-    }, 250);
+// Escucha reactiva en el input de búsqueda de órdenes
+if (document.getElementById('grid') && !document.getElementById('itemsBody')) {
+  document.addEventListener('DOMContentLoaded', () => {
+    loadOrdenes(1);
+    checkHash();
+    const d = debounce(() => loadOrdenes(1), 350);
+    document.getElementById('fSearch')?.addEventListener('input', d);
   });
+}
 
-  function renderOrders(ordenes) {
-    tableBody.innerHTML = ordenes
-      .map(
-        (o) => `
-      <tr class="hover:bg-neutral-800/40 transition-colors" data-id="${o.id_orden}">
-        <td class="font-mono text-emerald-400 font-semibold">${o.numero_impreso || "S/N"}</td>
-        <td class="font-mono">${o.placa_vehiculo}</td>
-        <td>${o.cliente_nombre || "Desconocido"}</td>
-        <td><span class="badge badge-${o.estatus.toLowerCase()}">${o.estatus}</span></td>
-        <td class="text-right font-mono">$${Number(o.total_orden).toFixed(2)}</td>
-      </tr>
-    `,
-      )
-      .join("");
-  }
-})();
+// Carga asíncrona parametrizada y refresco reactivo del grid
+async function loadOrdenes(page = 1) {
+  const params = new URLSearchParams({ page, limit: 25 });
+  const s = document.getElementById('fSearch')?.value?.trim();
+  const t = document.getElementById('fTipo')?.value;
+  const d = document.getElementById('fDesde')?.value;
+  const h = document.getElementById('fHasta')?.value;
+  if (s) params.set('search', s);
+  if (t) params.set('tipo_documento', t);
+  if (d) params.set('fecha_desde', d);
+  if (h) params.set('fecha_hasta', h);
+
+  ordenesData = await GET('/api/ordenes/?' + params) || { items: [], total: 0, page: 1 };
+  ordenesPage = page;
+  renderOrdenesGrid();
+  ordenesPagination();
+}
 ```
 
 </CodeWindow>
@@ -308,28 +283,50 @@ En el patio operativo, las búsquedas continuas por placa o estatus podían gene
 
 Los talonarios preimpresos disponen de cupos inalterables: 10 renglones útiles en Facturas y 12 en Notas de Entrega. Cuando una reparación sobrepasa dicho límite, `orden_service.create_split` calcula la partición necesaria (`chunks = ceil(total_items / limite_renglones)`) y adquiere un **bloqueo pesimista** sobre la secuencia para reservar correlativos continuos sin colisiones:
 
-<CodeWindow title="app/services/orden_service.py">
+<CodeWindow title="app/services/orden_service.py" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/main/app/services/orden_service.py#L216-L253">
 
 ```python
-# Reserva atómica de N correlativos continuos bajo bloqueo pesimista
-seq = (
-    db.query(models.DocumentSequence)
-    .filter(models.DocumentSequence.tipo_documento == data.tipo_documento)
-    .with_for_update()
-    .first()
-)
+def create_split(db: Session, data: schemas.OrdenCreate) -> list:
+    """Crea una o varias órdenes según cuántos ítems quepan por hoja fiscal.
+    
+    Si los ítems sobran, crea N órdenes con correlativos consecutivos reservados
+    atómicamente bajo bloqueo pesimista (.with_for_update()), cada una con su chunk
+    de ítems, subtotal, e idénticos snapshots históricos.
+    """
+    limite = ITEMS_POR_HOJA.get(data.tipo_documento)
+    detalles = data.detalles
 
-base_numero = seq.ultimo_numero + 1
-seq.ultimo_numero += chunks_count  # Reserva del bloque continuo
-db.flush()
+    if not limite or len(detalles) <= limite:
+        return [create(db, data)]
 
-for i, chunk in enumerate(items_chunks):
-    orden = models.Orden(
-        numero_impreso=f"{base_numero + i:06d}",
-        subtotal=sum(item.precio * item.cantidad for item in chunk),
-        **snapshot_data
+    # 1. División en chunks por límite físico de papelería
+    chunks = [detalles[i:i + limite] for i in range(0, len(detalles), limite)]
+    n_chunks = len(chunks)
+
+    # 2. Reserva atómica de N correlativos consecutivos con bloqueo pesimista
+    seq = (
+        db.query(models.DocumentSequence)
+        .filter(models.DocumentSequence.tipo_documento == data.tipo_documento)
+        .with_for_update()
+        .first()
     )
-    db.add(orden)
+
+    if seq:
+        m = re.search(r'\d+', str(data.numero_impreso).replace('-', '').replace(' ', ''))
+        base_num = int(m.group()) if m else seq.ultimo_numero + 1
+        base_num = max(base_num, seq.ultimo_numero + 1)
+
+        numeros = [_formatear_numero(seq, base_num + i) for i in range(n_chunks)]
+        seq.ultimo_numero = base_num + n_chunks - 1  # Bloque consecutivo garantizado
+    else:
+        m = re.search(r'\d+', str(data.numero_impreso).replace('-', '').replace(' ', ''))
+        base_num = int(m.group()) if m else 1
+        numeros = [str(base_num + i).zfill(6) for i in range(n_chunks)]
+
+    # 3. Snapshot inmutable del cliente/vehículo al emitir
+    dump_base = data.model_dump(exclude={"detalles", "total_orden", "mecanico_ids", "numero_impreso"})
+    snap = _build_snapshot(db, data.placa_vehiculo)
+    dump_base.update(snap)
 ```
 
 </CodeWindow>
@@ -346,18 +343,46 @@ Sin embargo, en el mundo real de un taller automotriz, los vehículos cambian de
 
 Para garantizar la inmutabilidad legal sin renunciar a la normalización para operaciones cotidianas, se implementó una **desnormalización intencional**: al emitir la orden en `orden_service.py`, se capturan y congelan en columnas dedicadas (`cli_nombre`, `cli_rif`, `veh_modelo`) los datos fiscales vigentes en ese instante exacto. El modelo ORM expone una propiedad híbrida con fallback transparente:
 
-<CodeWindow title="app/models/orden.py">
+<CodeWindow title="app/models.py" githubUrl="https://github.com/Jesus-1205/Taller-Admin-v2/blob/main/app/models.py#L114-L146">
 
 ```python
-@property
-def cliente_nombre(self) -> str | None:
-    # 1. Prioridad: Snapshot inmutable congelado al emitir la orden (auditoría fiscal)
-    if self.cli_nombre:
-        return self.cli_nombre
-    # 2. Respaldo: Relación viva con el titular actual (compatibilidad con registros legacy)
-    if self.vehiculo and self.vehiculo.cliente:
-        return self.vehiculo.cliente.razon_social
-    return None
+class Orden(Base):
+    __tablename__ = "ordenes"
+
+    id_orden: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tipo_documento: Mapped[str] = mapped_column(Text, nullable=False)
+    numero_impreso: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # ── Snapshot del cliente/vehículo al momento de crear la orden ──────────
+    # Permite que si el vehículo cambia de dueño, las órdenes antiguas
+    # conserven los datos del titular legal original (blindaje fiscal).
+    cli_nombre: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cli_rif: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cli_telefono: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cli_direccion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    veh_modelo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    veh_anio: Mapped[str | None] = mapped_column(Text, nullable=True)
+    veh_color: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    vehiculo: Mapped["Vehiculo"] = relationship("Vehiculo", back_populates="ordenes")
+
+    @property
+    def cliente_nombre(self) -> str | None:
+        # 1. Prioridad: Snapshot guardado en la orden (auditoría fiscal inmutable)
+        if self.cli_nombre:
+            return self.cli_nombre
+        # 2. Respaldo: Datos vivos del cliente actual (compatibilidad registros legacy)
+        if self.vehiculo and self.vehiculo.cliente:
+            return self.vehiculo.cliente.razon_social
+        return None
+
+    @property
+    def cliente_rif(self) -> str | None:
+        if self.cli_rif:
+            return self.cli_rif
+        if self.vehiculo and self.vehiculo.cliente:
+            return self.vehiculo.cliente.rif_cedula
+        return None
 ```
 
 </CodeWindow>
