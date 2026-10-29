@@ -165,15 +165,7 @@ Panel gerencial con agregaciones SQL nativas para auditoría de mano de obra y r
 
 La plataforma implementa el **Service Layer Pattern** para aislar estrictamente las reglas transaccionales de la capa de transporte HTTP y presentación:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">architecture_overview.txt</span>
-  </div>
+<CodeWindow title="architecture_overview.txt">
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -203,7 +195,7 @@ La plataforma implementa el **Service Layer Pattern** para aislar estrictamente 
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-</div>
+</CodeWindow>
 
 ### Organización Modular en Cuatro Capas
 
@@ -226,15 +218,7 @@ El desarrollo resolvió fricciones críticas que abarcan desde la reactividad en
 
 En el patio operativo, las búsquedas continuas por placa o estatus podían generar ráfagas de peticiones desordenadas. Para garantizar una respuesta instantánea sin sobrecargar el servidor ni provocar condiciones de carrera en el DOM (*race conditions*), se implementó un controlador de búsqueda reactiva con **debounce de 250 ms** y descarte de solicitudes obsoletas mediante **`AbortController`**:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">static/js/ordenes_search.js</span>
-  </div>
+<CodeWindow title="static/js/ordenes_search.js">
 
 ```javascript
 /**
@@ -298,7 +282,7 @@ En el patio operativo, las búsquedas continuas por placa o estatus podían gene
 })();
 ```
 
-</div>
+</CodeWindow>
 
 ---
 
@@ -306,15 +290,7 @@ En el patio operativo, las búsquedas continuas por placa o estatus podían gene
 
 Los talonarios preimpresos disponen de cupos inalterables: 10 renglones útiles en Facturas y 12 en Notas de Entrega. Cuando una reparación sobrepasa dicho límite, `orden_service.create_split` calcula la partición necesaria (`chunks = ceil(total_items / limite_renglones)`) y adquiere un **bloqueo pesimista** sobre la secuencia para reservar correlativos continuos sin colisiones:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">app/services/orden_service.py</span>
-  </div>
+<CodeWindow title="app/services/orden_service.py">
 
 ```python
 # Reserva atómica de N correlativos continuos bajo bloqueo pesimista
@@ -338,7 +314,7 @@ for i, chunk in enumerate(items_chunks):
     db.add(orden)
 ```
 
-</div>
+</CodeWindow>
 
 Toda la emisión se confina a un único bloque transaccional: o se imprimen todos los correlativos consecutivos con reserva atómica, o se revierte la operación por completo (`db.rollback()`), garantizando cero huecos fiscales.
 
@@ -352,15 +328,7 @@ Sin embargo, en el mundo real de un taller automotriz, los vehículos cambian de
 
 Para garantizar la inmutabilidad legal sin renunciar a la normalización para operaciones cotidianas, se implementó una **desnormalización intencional**: al emitir la orden en `orden_service.py`, se capturan y congelan en columnas dedicadas (`cli_nombre`, `cli_rif`, `veh_modelo`) los datos fiscales vigentes en ese instante exacto. El modelo ORM expone una propiedad híbrida con fallback transparente:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">app/models/orden.py</span>
-  </div>
+<CodeWindow title="app/models/orden.py">
 
 ```python
 @property
@@ -374,7 +342,7 @@ def cliente_nombre(self) -> str | None:
     return None
 ```
 
-</div>
+</CodeWindow>
 
 Esta decisión arquitectónica blinda la trazabilidad contable del taller: transferir una placa a un nuevo comprador solo afecta las reparaciones futuras, preservando el histórico legal intacto.
 
