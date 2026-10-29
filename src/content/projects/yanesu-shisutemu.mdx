@@ -215,15 +215,7 @@ Durante la concepción y despliegue del sistema se superaron cuatro retos de ing
 
 El estándar IEEE 754 introduce imprecisiones de coma flotante (`0.1 + 0.2 = 0.30000000000000004`) inaceptables al liquidar impuestos y prorratear descuentos. Queda terminantemente prohibido el tipo `float` en toda la plataforma: cada variable monetaria se procesa mediante `Decimal(str(monto))` bajo redondeo bancario `ROUND_HALF_UP`.
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">app/core/currency.py</span>
-  </div>
+<CodeWindow title="app/core/currency.py">
 
 ```python
 from decimal import Decimal, ROUND_HALF_UP
@@ -235,19 +227,11 @@ def quantize_currency(amount: Decimal | str) -> Decimal:
     return amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 ```
 
-</div>
+</CodeWindow>
 
 Al distribuir un descuento global entre múltiples renglones, la sumatoria individual puede divergir por ±0.01 (*el dilema del centavo huérfano*). Para garantizar cuadre contable exacto, se implementó el **Largest Remainder Method (Hare-Niemeyer)**:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">app/services/distribution.py</span>
-  </div>
+<CodeWindow title="app/services/distribution.py">
 
 ```python
 from decimal import Decimal, ROUND_FLOOR, ROUND_HALF_UP
@@ -280,7 +264,7 @@ def distribute_amount_exact(total_to_distribute: Decimal, weights: List[Decimal]
     return results
 ```
 
-</div>
+</CodeWindow>
 
 ---
 
@@ -294,15 +278,7 @@ Se descartó la vinculación automática a ciegas en favor de un flujo asistido 
 
 En la interfaz (React 19), los valores numéricos y fechas se precargan en inputs editables, mientras que la descripción textual original extraída por la IA se proyecta como **etiqueta de referencia visual fija arriba del selector** (`#1 BELMONT`, `#2 CONSUL`). Esto permite al usuario cotejar y vincular en segundos el producto exacto en su base de datos (`Buscar producto...`), con la posibilidad de hacer clic en la miniatura para inspeccionar la factura física en un modal ligero flotante sin cambiar de pestaña.
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">app/services/invoice_service.py</span>
-  </div>
+<CodeWindow title="app/services/invoice_service.py">
 
 ```python
 def parse_invoice_with_ai(
@@ -339,7 +315,7 @@ def parse_invoice_with_ai(
     }
 ```
 
-</div>
+</CodeWindow>
 
 ---
 
@@ -347,15 +323,7 @@ def parse_invoice_with_ai(
 
 Para sincronizar la cotización del BCV en tiempo real mediante Server-Sent Events sin agotar el pool de SQLAlchemy (`QueuePool`), se aisló la consulta inicial a un destello de menos de 10 ms, cerrando la sesión antes de entrar al bucle asíncrono del evento:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">app/routes/exchange_rates.py</span>
-  </div>
+<CodeWindow title="app/routes/exchange_rates.py">
 
 ```python
 @router.get("/exchange-rates/stream")
@@ -391,7 +359,7 @@ async def stream_exchange_rates(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 ```
 
-</div>
+</CodeWindow>
 
 ---
 
@@ -399,15 +367,7 @@ async def stream_exchange_rates(
 
 En operaciones de alta rotación, levantar las manos hacia el ratón ralentiza el despacho. Toda la experiencia de mostrador se gobierna mediante atajos de teclado físico (`F2` catálogo, `F10` cobro, `F9` orden en espera, `Escape` cancelar). Para evitar que los listeners globales provoquen re-renderizados continuos en el árbol de componentes, se implementó el hook `usePosKeyboard` utilizando referencias mutables desacopladas del ciclo de render:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">frontend/src/features/sales/hooks/usePosKeyboard.ts</span>
-  </div>
+<CodeWindow title="frontend/src/features/sales/hooks/usePosKeyboard.ts">
 
 ```typescript
 import { useEffect, useRef } from "react";
@@ -458,19 +418,11 @@ export function usePosKeyboard(handlers: PosKeyboardHandlers) {
 }
 ```
 
-</div>
+</CodeWindow>
 
 A su vez, el estado reactivo del carrito en `cartStore.ts` discrimina presentaciones (`UNIDAD` vs `CAJA`), calculando subtotales, alícuotas impositivas (IVA 16%) y conversión bimoneda inmediata a tasa oficial BCV:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">frontend/src/features/sales/stores/cartStore.ts</span>
-  </div>
+<CodeWindow title="frontend/src/features/sales/stores/cartStore.ts">
 
 ```typescript
 import { create } from "zustand";
@@ -562,7 +514,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
 }));
 ```
 
-</div>
+</CodeWindow>
 
 ---
 
@@ -572,15 +524,7 @@ En la fase inicial (MVP), la reportería gerencial (`/sales/summary`) iteraba re
 
 Bajo la disciplina de **Spec-Driven Development (SDD)**, se especificó y ejecutó la migración hacia agregaciones relacionales agrupadas con `func.sum()` delegadas directamente a PostgreSQL y SQLite:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">app/services/dashboard_service.py</span>
-  </div>
+<CodeWindow title="app/services/dashboard_service.py">
 
 ```python
 # Push-down SQL: Delegación del cómputo de costos y márgenes al motor de base de datos
@@ -599,7 +543,7 @@ stmt = (
 metricas = db.execute(stmt).first()
 ```
 
-</div>
+</CodeWindow>
 
 ### Auditoría de Telemetría Comparativa (Línea Base vs. Producción)
 
@@ -648,15 +592,7 @@ Los benchmarks ejecutados con `backend/scripts/benchmark_suite.py` confirman una
 
 Para blindar la lógica transaccional de cobro e inventario contra regresiones, la plataforma implementa una suite integral de 2.662 pruebas automatizadas con 100% de aprobación continua en GitHub Actions:
 
-<div class="whitepaper-code-window">
-  <div class="whitepaper-code-header">
-    <div class="whitepaper-code-dots" aria-hidden="true">
-      <span class="whitepaper-code-dot whitepaper-code-dot-close"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
-      <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
-    </div>
-    <span class="whitepaper-code-title">test_suite_coverage.txt</span>
-  </div>
+<CodeWindow title="test_suite_coverage.txt">
 
 ```text
 TOTAL CONSOLIDADO: 2.662 Casos de Prueba Automatizados
@@ -676,7 +612,7 @@ TOTAL CONSOLIDADO: 2.662 Casos de Prueba Automatizados
     └── Componentes Visuales y Formateadores de Divisas
 ```
 
-</div>
+</CodeWindow>
 
 ### Pirámide de Cobertura Consolidada
 
