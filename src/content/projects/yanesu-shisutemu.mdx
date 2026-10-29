@@ -1,7 +1,7 @@
 ---
 title: "Yanesu Shisutemu"
-tagline: "Arquitectura de un POS & ERP Transaccional Bimoneda de Alta Disponibilidad"
-clientOrContext: "Retail de Bebidas y Licores (Distribución al Detal y al Mayor)"
+tagline: "Software ERP & POS Modular a Medida: Arquitectura Transaccional Bimoneda en Cloud VPS y Desktop"
+clientOrContext: "Comercio Minorista & Mayorista (ERP Modular + Control de Retornables)"
 timeframe: "Jul 2026 – Presente"
 productionStatus: "Producción Activa"
 role: "Full-Stack Software Developer & Systems Architect"
@@ -50,7 +50,7 @@ stack:
     - "n8n Automation Engine"
 
 architecture:
-  pattern: "Desacoplada: REST API + Híbrido Desktop (Tauri Sidecar) / Cloud (Docker VPS)"
+  pattern: "Desacoplada: REST API en Cloud VPS (Docker Compose + PostgreSQL 16) con Soporte Desktop Híbrido (Tauri 2 + SQLite)"
   databaseSchema: "Relacional 3NF con Snapshots Históricos Inmutables y Columnas Persistidas"
   migrationsTool: "Alembic Batch Mode (Dual Dialect SQLite / PostgreSQL)"
 
@@ -71,15 +71,15 @@ mediaArtifacts:
   screenshots:
     - src: "/assets/projects/yanesu/screenshot-pos.png"
       caption: "Terminal de mostrador (POS) con soporte para split payments bimoneda y teclado rápido."
-    - src: "/assets/projects/yanesu/screenshot-invoices-hub.png"
-      caption: "Hub de compras y facturación con ingestión OCR multimodal vía Gemini AI."
     - src: "/assets/projects/yanesu/screenshot-analytics.png"
-      caption: "Dashboard gerencial optimizado con agregaciones SQL nativas y carga diferida."
+      caption: "Panel de Reportes Gerenciales con análisis de rentabilidad, márgenes y ventas por período."
 ---
 
 ## 01. Contexto de Negocio & Fricción Operativa
 
-**Yanesu Shisutemu** es una plataforma transaccional de Punto de Venta (POS) y ERP diseñada para el comercio minorista y mayorista de bebidas y alimentos en Venezuela, adaptada para operar con alta disponibilidad bajo tres fricciones críticas de negocio:
+**Yanesu Shisutemu** es una plataforma transaccional de Punto de Venta (POS) y ERP desarrollada a medida para el comercio minorista y mayorista general (gestión de productos, proveedores, compras, categorías, inventario multimoneda y analítica de ventas). Adicionalmente, incorpora módulos verticales especializados como el **control de envases retornables y casilleros** para licorerías y distribuidores de bebidas.
+
+El sistema fue concebido y opera activamente en producción sobre un **servidor VPS Cloud orquestado con Docker Compose**, manteniendo en paralelo una variante empaquetada para **Desktop con Tauri 2** para clientes que requieran aislamiento local:
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
   <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
@@ -113,8 +113,6 @@ mediaArtifacts:
   </div>
 </div>
 
-Para resistir fallas eléctricas y de conectividad en hardware modesto (4 GB RAM), el sistema opera de forma **100% offline en el borde (Edge Desktop con Tauri y SQLite)**, sincronizándose con un servidor central **Cloud Linux (PostgreSQL y n8n)** para reportería remota.
-
 ---
 
 ## 02. Demostraciones en Vivo (Flujos en Producción)
@@ -132,14 +130,11 @@ Navegación acelerada por atajos físicos (`F2`/`F10`), soporte para pagos divid
 
 ---
 
-### 2. Ingestión Automatizada de Facturas con IA Multimodal
-Pipeline de visión computacional con Google Gemini API para digitalizar facturas de compras a esquemas Pydantic validados con human-in-the-loop.
+### 2. Ingestión Asistida de Facturas con IA Multimodal (Human-in-the-Loop)
+Pipeline con Google Gemini API que digitaliza facturas y notas de entrega físicas. Extrae metadatos y líneas de artículos, colocando los nombres originales como referencia visual directa sobre cada selector (`#1 BELMONT`) y habilitando un visor modal flotante del documento para cotejo manual instantáneo.
 
-![Digitalización de facturas con IA Multimodal](/assets/projects/yanesu/demo-gemini-ocr.gif)
-*Extracción multimodal con Gemini: captura automática de control fiscal, RIF, líneas de artículos y alícuotas impositivas.*
-
-![Hub de compras](/assets/projects/yanesu/screenshot-invoices-hub.png)
-*Hub central de compras y cuentas por pagar: conciliación de abonos parciales, trazabilidad de vencimientos y auditoría de comprobantes.*
+![Digitalización asistida de facturas con IA Multimodal](/assets/projects/yanesu/demo-gemini-ocr.gif)
+*Extracción asistida con Gemini: precarga automática de metadatos, referencia textual del comprobante sobre el input de búsqueda y resolución asistida hacia el catálogo local.*
 
 ---
 
@@ -149,8 +144,8 @@ Respuesta sub-100ms en tableros ejecutivos tras erradicar cuellos de botella N+1
 ![Navegación reactiva post-optimización](/assets/projects/yanesu/demo-performance-navigation.gif)
 *Transición instantánea entre módulos del ERP sin bloqueo de hilo tras la optimización analítica de consultas.*
 
-![Panel gerencial](/assets/projects/yanesu/screenshot-analytics.png)
-*Dashboard gerencial: volumen de facturación diaria, márgenes consolidados por categoría y stock crítico en tiempo real.*
+![Panel de Reportes](/assets/projects/yanesu/screenshot-analytics.png)
+*Panel de Reportes Gerenciales: consolidación analítica de ingresos brutos, costos de mercancía, margen de ganancia neta y distribución de ventas por períodos y métodos de pago.*
 
 ---
 
@@ -173,21 +168,22 @@ Para cumplir simultáneamente con los requisitos de independencia offline en mos
 |                               TOPOLOGÍAS DE DESPLIEGUE FLEXIBLES                                |
 +-------------------------------------------------------------------------------------------------+
 |                                                                                                 |
-|   TOPOLOGÍA A: DESKTOP STANDALONE (Edge Offline)  |  TOPOLOGÍA B: CLOUD MULTI-USER (VPS Linux)  |
-|                                                   |                                             |
-|   +-------------------------------------------+   |   Navegador Web / Terminal Remota           |
-|   |   Ventana Nativa Tauri 2 (Rust Core)      |   |        │ HTTPS (:443)                       |
-|   |   +-----------------------------------+   |   |        ▼                                    |
-|   |   | React 19 SPA (WebView Local)      |   |   |   +─────────────────────────────────────+   |
-|   |   +-----------------+-----------------+   |   |   | Nginx Alpine (Reverse Proxy & SPA)  |   |
-|   |                     │ HTTP / Cookie       |   |   +──────────────────┬──────────────────+   |
-|   |                     ▼                     |   |                      │ /api/ (Red Bridge)   |
-|   |   | FastAPI Server (Python Sidecar)   |   |   |                      ▼                      |
-|   |   | - Dynamic Port: .port bridge      |   |   |   +─────────────────────────────────────+   |
-|   |   | - SQLite Embebida (yanesu.db)     |   |   |   | FastAPI ASGI Server (uvicorn)       |   |
-|   |   | - Operación 100% Offline          |   |   |   | - PostgreSQL 16 (Pool Conexiones)   |   |
-|   |   +-----------------------------------+   |   |   | - n8n Automation Engine             |   |
-|   |   +-------------------------------------------+   |   +─────────────────────────────────────+   |
+|   TOPOLOGÍA A: CLOUD MULTI-USER (VPS / Docker Compose) │  TOPOLOGÍA B: DESKTOP STANDALONE (Tauri 2)  |
+|   [ Entorno Principal en Producción Activa ]            │  [ Entorno Secundario Híbrido / Local ]     |
+|                                                         │                                             |
+|   Navegador Web / Terminal Remota                       │  +---------------------------------------+  |
+|        │ HTTPS (:443)                                   │  | Ventana Nativa Tauri 2 (Rust Core)    |  |
+|        ▼                                                │  | +-----------------------------------+ |  |
+|   +─────────────────────────────────────+               │  | | React 19 SPA (WebView Local)      | |  |
+|   | Nginx Alpine (Reverse Proxy & SPA)  |               │  | +-----------------+-----------------+ |  |
+|   +──────────────────┬──────────────────+               │  |                   │ HTTP / Cookie     |  |
+|                      │ /api/ (Red Bridge)               │  |                   ▼                   |  |
+|                      ▼                                  │  | | FastAPI Server (Python Sidecar)   | |  |
+|   +─────────────────────────────────────+               │  | | - Dynamic Port: .port bridge      | |  |
+|   | FastAPI ASGI Server (Uvicorn)       |               │  | | - SQLite Embebida (yanesu.db)     | |  |
+|   | - PostgreSQL 16 (Pool Conexiones)   |               │  | | - Operación 100% Offline          | |  |
+|   | - n8n Automation Engine             |               │  | +-----------------------------------+ |  |
+|   +─────────────────────────────────────+               │  +---------------------------------------+  |
 |                                                                                                 |
 +-------------------------------------------------------------------------------------------------+
 ```
@@ -196,21 +192,21 @@ Para cumplir simultáneamente con los requisitos de independencia offline en mos
 
 ### Separación de Responsabilidades en Cuatro Capas
 
-El backend en Python 3.12 y FastAPI sigue una separación arquitectónica estricta para garantizar aislamiento transaccional y testeabilidad total:
+El backend en Python 3.12 y FastAPI implementa una separación estricta para garantizar aislamiento transaccional y testeabilidad total:
 
-1. **Controladores y Rutas (`app/routes`):** Ciclo de vida HTTP y Server-Sent Events (SSE). Autenticación con cookies `httpOnly`, inyección `Depends(get_db)` y mapeo a códigos 404, 409 y 422.
-2. **Servicios de Dominio (`app/services`):** Lógica de negocio atómica (`SaleService`, `InvoiceService`, `InventoryService`, `RateService`) coordinando tablas bajo `db.commit()` y `db.rollback()`.
-3. **Esquemas y Contratos (`app/schemas`):** Validación Pydantic v2 con coerción estricta de cadenas numéricas a `Decimal` y rechazo de decimales espurios en tiempo de deserialización.
-4. **Persistencia y Modelado (`app/models`):** Modelos SQLAlchemy 2.0 con tipos `Mapped[...]`, integridad referencial `RESTRICT` y columnas persistidas (`Computed`) para totales de venta.
+1. **Controladores y Rutas (`app/routes/`):** Routers modulares (`sales.py`, `invoices.py`, `products.py`, `reports.py`, `exchange_rates.py`). Ciclo de vida HTTP y Server-Sent Events (SSE), inyección `Depends(get_db)` y mapeo de errores controlados.
+2. **Servicios de Dominio (`app/services/`):** Lógica transaccional pura (`sales_service.py`, `invoice_service.py`, `gemini_service.py`, `broadcaster.py`, `exchange_rate_service.py`) coordinando operaciones bajo `db.commit()` y `db.rollback()`.
+3. **Esquemas y Contratos (`app/schemas/`):** Validación en frontera con Pydantic v2 (`sale.py`, `invoice.py`, `product.py`, `exchange_rate.py`), garantizando coerción estricta a `Decimal` y rechazo de tipos flotantes.
+4. **Persistencia y Modelado (`app/models/`):** Tipado declarativo en SQLAlchemy 2.0 (`sale.py`, `invoice.py`, `product.py`, `retornable.py`, `category.py`, `combo.py`) con `Mapped[...]` e integridad referencial `RESTRICT`.
 
 ### Decisiones de Arquitectura Registradas (ADRs)
 
-- **ADR-001: Tauri v2 frente a Electron para Escritorio**  
-  *Contexto:* Terminales de mostrador con 4 GB de RAM. Electron consume más de 200 MB en reposo.  
-  *Decisión:* Tauri v2 con WebView nativa y sidecar FastAPI en Python. Consumo resultante: **~30 MB de RAM** y arranque inmediato.
+- **ADR-001: Cloud VPS con Docker Compose como Arquitectura Principal y Tauri 2 como Empaquetado Local**  
+  *Contexto:* La plataforma fue concebida primordialmente para despliegue en servidor VPS (acceso concurrente web, multiusuario y sincronización continua). Posteriormente se adaptó a Desktop para operar en entornos con requerimientos de aislamiento local.  
+  *Decisión:* Docker Compose orquestando Nginx, FastAPI y PostgreSQL 16 como núcleo de producción, y Tauri 2 con sidecar FastAPI y SQLite embebida como empaquetado secundario de escritorio sin bifurcar la base de código.
 - **ADR-002: Dualidad SQLite / PostgreSQL sin Bifurcación de Código**  
-  *Contexto:* Operación offline local con SQLite y despliegue centralizado en la nube con PostgreSQL 16.  
-  *Decisión:* SQLAlchemy 2.0 unificado con Alembic en modo batch (`render_as_batch=True`) para aplicar migraciones idénticas en ambos motores.
+  *Contexto:* Soporte para PostgreSQL 16 en VPS Cloud y SQLite en modo Desktop y suite de pruebas.  
+  *Decisión:* SQLAlchemy 2.0 unificado con Alembic en modo batch (`render_as_batch=True`) para aplicar migraciones relacionales idénticas en ambos motores.
 - **ADR-003: Centralización de la Autoridad Financiera en el Backend**  
   *Contexto:* Tipos `number` de JavaScript sufren de imprecisiones IEEE 754.  
   *Decisión:* El frontend calcula subtotales solo para renderizado reactivo; el servidor FastAPI valida y sella los montos finales en `Decimal` antes del commit.
@@ -294,9 +290,15 @@ def distribute_amount_exact(total_to_distribute: Decimal, weights: List[Decimal]
 
 ---
 
-### Reto 2: Algoritmo de Desempaque Transaccional Automático (Auto-Unboxing)
+### Reto 2: Ingestión Asistida de Facturas: Human-in-the-Loop vs. Fuzzy Matching (Google Gemini API)
 
-En el expendio de licores, la mercancía se recibe en cajas completas pero los clientes compran por unidades sueltas. En lugar de forzar al cajero a registrar desempacados manuales, `SaleService` evalúa y transforma el inventario de forma transparente y atómica durante el checkout:
+**Problema:**  
+En el ecosistema comercial venezolano, las facturas y notas de entrega físicas emitidas por distribuidores mayoristas contienen descripciones sumamente heterogéneas, abreviaciones crípticas y jerga informal (*"BELMONT"*, *"CONSUL"*, *"LUCKY NOVA"*). Intentar resolver la concordancia de estos nombres contra el catálogo local mediante algoritmos de similitud de cadenas (*fuzzy matching* / distancia Levenshtein) provocó asociaciones erróneas con impactos destructivos en el stock de inventario.
+
+**Solución Arquitectónica:**  
+Se descartó la vinculación automática a ciegas en favor de un flujo asistido **Human-in-the-Loop** de alta velocidad. El servicio `app/services/invoice_service.py` ejecuta **dos llamadas desacopladas a la API de Google Gemini** para erradicar alucinaciones cruzadas: una para extraer metadatos globales (proveedor, número de documento, fecha, moneda) y otra para extraer la lista secuencial de productos y precios.
+
+En la interfaz (React 19), los valores numéricos y fechas se precargan en inputs editables, mientras que la descripción textual original extraída por la IA se proyecta como **etiqueta de referencia visual fija arriba del selector** (`#1 BELMONT`, `#2 CONSUL`). Esto permite al usuario cotejar y vincular en segundos el producto exacto en su base de datos (`Buscar producto...`), con la posibilidad de hacer clic en la miniatura para inspeccionar la factura física en un modal ligero flotante sin cambiar de pestaña.
 
 <div class="whitepaper-code-window">
   <div class="whitepaper-code-header">
@@ -305,26 +307,45 @@ En el expendio de licores, la mercancía se recibe en cajas completas pero los c
       <span class="whitepaper-code-dot whitepaper-code-dot-minimize"></span>
       <span class="whitepaper-code-dot whitepaper-code-dot-maximize"></span>
     </div>
-    <span class="whitepaper-code-title">auto_unboxing_flow.txt</span>
+    <span class="whitepaper-code-title">app/services/invoice_service.py</span>
   </div>
 
-```text
-[Venta de 3 Unidades]
-         │
-         ▼
-¿stock_unidades >= 3? ──No──▶ ¿stock_cajas >= 1? ──No──▶ [Error 409: Stock Insuficiente]
-         │                              │
-         Sí                             Sí (Auto-Unboxing)
-         │                              ├─▶ 1. stock_cajas -= 1
-         │                              ├─▶ 2. stock_unidades += (unidades_por_caja - 3)
-         │                              └─▶ 3. Registro auditoría: "AUTO_UNBOXING_SALE"
-         ▼                              │
-[Confirmación Transaccional de la Venta (Commit Atómico)]
+```python
+def parse_invoice_with_ai(
+    files: list[tuple[bytes, str]],
+    db: Session | None = None
+) -> dict:
+    """Procesa facturas físicas con Gemini mediante 2 llamadas desacopladas para evitar alucinaciones.
+    
+    No aplica fuzzy matching: extrae texto exacto y delega la resolución asistida al usuario.
+    """
+    optimized_files = [optimize_image(b, ct) for b, ct in files]
+
+    # Request 1: Metadatos globales con token budget reducido (Proveedor, Nº, Fecha, Moneda)
+    metadata = _call_gemini(
+        optimized_files,
+        INVOICE_METADATA_PROMPT,
+        "Extrae metadatos: proveedor, número, fecha, moneda, tipo de documento.",
+        max_output_tokens=300,
+        db=db,
+    )
+
+    # Request 2: Renglones físicos secuenciales (Nombre impreso, Cantidad, Precio)
+    productos_data = _call_gemini(
+        optimized_files,
+        INVOICE_PRODUCTS_PROMPT,
+        "Extrae lista de productos en el orden exacto en que aparecen en la factura.",
+        max_output_tokens=2000,
+        db=db,
+    )
+
+    return {
+        "metadata": metadata,
+        "productos": productos_data.get("productos", []),
+    }
 ```
 
 </div>
-
-La operación se ejecuta con bloqueo pesimista a nivel de fila (`with_for_update`), impidiendo inconsistencias de concurrencia entre terminales simultáneas.
 
 ---
 
@@ -683,9 +704,9 @@ El aislamiento de base de datos en `conftest.py` descarta mocks compartidos:
 
 ## 07. Conclusiones y Retrospectiva de Ingeniería
 
-El despliegue productivo de **Yanesu Shisutemu** demuestra que restricciones severas de entorno (bimonetariedad asimétrica, hardware modesto e inestabilidad de red) se resuelven mediante arquitectura rigurosa:
+El despliegue productivo de **Yanesu Shisutemu** demuestra que las restricciones operativas del comercio real (bimonetariedad asimétrica, catálogos extensos y documentos físicos informales) se resuelven mediante arquitectura rigurosa y diseño centrado en el usuario:
 
-1. **Eficiencia en el Borde (*Edge Desktop*):** Tauri v2 con sidecar FastAPI redujo la memoria base a ~30 MB de RAM frente a los 200+ MB de Electron, habilitando alta respuesta local sin conexión obligatoria a internet.
+1. **Flexibilidad Arquitectónica (Cloud VPS + Desktop Híbrido):** La orquestación con Docker Compose en servidor VPS centraliza la operación y analítica en tiempo real para múltiples terminales web, mientras que el soporte desacoplado para Tauri 2 asegura continuidad operativa local para clientes que requieran aislamiento sin bifurcar la base de código.
 2. **Garantía Contable Inmutable:** El mandato "Zero-Floats" con `Decimal`, redondeo `ROUND_HALF_UP` y el método Hare-Niemeyer garantizan cero descuadres de caja, respaldados por 2.662 pruebas automatizadas.
-3. **Telemetría y Push-down SQL:** La refactorización basada en especificaciones (SDD) redujo la latencia media en -65.8% y el tráfico en -76.3%, delegando el trabajo pesado analítico al motor relacional.
-4. **Ecosistema Multiplataforma:** La combinación de automatización con n8n, mensajería en Telegram y modelos de visión multimodal (Gemini API) consolidó una solución transaccional completa y robusta para retail real.
+3. **Telemetría y Push-down SQL:** La refactorización analítica redujo la latencia media en un -65.8% y el tráfico en un -76.3%, delegando el trabajo pesado de costos y márgenes al motor relacional mediante SQLAlchemy 2.0.
+4. **Inteligencia Práctica (Human-in-the-Loop):** La integración de visión multimodal con Gemini API resolvió el cuello de botella de compras sin caer en las trampas del fuzzy match ante la jerga informal de notas de entrega, reduciendo drásticamente los tiempos de carga de inventario con un cotejo asistido de alta precisión.
