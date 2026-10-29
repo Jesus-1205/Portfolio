@@ -219,7 +219,7 @@ Durante la concepción y despliegue del sistema se superaron cuatro retos de ing
 
 El estándar IEEE 754 introduce imprecisiones de coma flotante (`0.1 + 0.2 = 0.30000000000000004`) inaceptables al liquidar transacciones e inventario. Queda terminantemente prohibido el tipo `float` en toda la capa transaccional: cada variable monetaria se valida en frontera con Pydantic v2 bajo coerción estricta a `Decimal` con escala fija de dos decimales (`decimal_places=2`):
 
-<CodeWindow title="backend/app/schemas/sale.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/schemas/sale.py#L8-L38">
+<CodeWindow title="backend/app/schemas/sale.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/schemas/sale.py">
 
 ```python
 from decimal import Decimal
@@ -246,7 +246,7 @@ class SalePaymentCreate(BaseModel):
 
 Para blindar la integridad contable y prevenir regresiones en la API, la suite de pruebas automatizadas verifica que cualquier intento de enviar montos con más de dos cifras decimales resulte en rechazo HTTP 422 inmediato:
 
-<CodeWindow title="backend/tests/test_decimal_precision.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/tests/test_decimal_precision.py#L44-L68">
+<CodeWindow title="backend/tests/test_decimal_precision.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/tests/test_decimal_precision.py">
 
 ```python
 class TestProductPriceDecimals:
@@ -279,7 +279,7 @@ Se descartó la vinculación automática a ciegas en favor de un flujo asistido 
 
 En la interfaz (React 19), los valores numéricos y fechas se precargan en inputs editables, mientras que la descripción textual original extraída por la IA se proyecta como **etiqueta de referencia visual fija arriba del selector** (`#1 BELMONT`, `#2 CONSUL`). Esto permite al usuario cotejar y vincular en segundos el producto exacto en su base de datos (`Buscar producto...`), con la posibilidad de hacer clic en la miniatura para inspeccionar la factura física en un modal ligero flotante sin cambiar de pestaña.
 
-<CodeWindow title="backend/app/services/invoice_service.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/services/invoice_service.py#L504-L541">
+<CodeWindow title="backend/app/services/invoice_service.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/services/invoice_service.py">
 
 ```python
 def analyze_invoice_from_image(
@@ -330,7 +330,7 @@ def analyze_invoice_from_image(
 
 Para sincronizar la cotización del BCV en tiempo real mediante Server-Sent Events sin agotar el pool de SQLAlchemy (`QueuePool`), se aisló la consulta inicial a un destello de menos de 10 ms, cerrando la sesión antes de entrar al bucle asíncrono del evento:
 
-<CodeWindow title="backend/app/routes/exchange_rates.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/routes/exchange_rates.py#L54-L89">
+<CodeWindow title="backend/app/routes/exchange_rates.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/routes/exchange_rates.py">
 
 ```python
 @router.get("/exchange-rates/stream")
@@ -374,7 +374,7 @@ async def stream_exchange_rates(
 
 En operaciones de alta rotación, levantar las manos hacia el ratón ralentiza el despacho. Toda la experiencia de mostrador se gobierna mediante atajos de teclado físico (`F2` catálogo, `F9` vaciar carrito, `F10` cobro, `Escape` cancelar o limpiar búsqueda). Se encapsuló la lógica de captura global en el custom hook `usePosKeyboard`:
 
-<CodeWindow title="frontend/src/features/sales/hooks/usePosKeyboard.ts" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/frontend/src/features/sales/hooks/usePosKeyboard.ts#L5-L56">
+<CodeWindow title="frontend/src/features/sales/hooks/usePosKeyboard.ts" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/frontend/src/features/sales/hooks/usePosKeyboard.ts">
 
 ```typescript
 import { useEffect, type RefObject } from "react";
@@ -431,7 +431,7 @@ export function usePosKeyboard(
 
 A su vez, el estado reactivo del carrito en `cartStore.ts` discrimina presentaciones (`UNIDAD` vs `CAJA`), calculando subtotales, alícuotas impositivas (IVA 16% o exento) y congelando un snapshot de la tasa oficial BCV al añadir el primer artículo para garantizar consistencia durante la transacción:
 
-<CodeWindow title="frontend/src/features/sales/store/cartStore.ts" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/frontend/src/features/sales/store/cartStore.ts#L40-L119">
+<CodeWindow title="frontend/src/features/sales/store/cartStore.ts" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/frontend/src/features/sales/store/cartStore.ts">
 
 ```typescript
 import { create } from "zustand";
@@ -514,7 +514,7 @@ En la fase inicial (MVP), la reportería gerencial (`/sales/summary`) iteraba re
 
 Bajo la disciplina de **Spec-Driven Development (SDD)**, se especificó y ejecutó la migración hacia agregaciones relacionales agrupadas con subconsultas y `func.sum()` delegadas directamente al motor relacional:
 
-<CodeWindow title="backend/app/services/category_service.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/services/category_service.py#L85-L108">
+<CodeWindow title="backend/app/services/category_service.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/services/category_service.py">
 
 ```python
 def get_category_analytics(db: Session) -> CategoryAnalyticsResponse:
