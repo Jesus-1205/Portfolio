@@ -12,39 +12,116 @@ interface Props {
 }
 
 const { headings, stack } = Astro.props;
-const filteredHeadings = (headings || []).filter((h) => h.depth === 2 || h.depth === 3);
+
+interface TocSection {
+  heading: MarkdownHeading;
+  subheadings: MarkdownHeading[];
+}
+
+const sections: TocSection[] = [];
+let currentSection: TocSection | null = null;
+
+for (const heading of headings || []) {
+  if (heading.depth === 2) {
+    currentSection = { heading, subheadings: [] };
+    sections.push(currentSection);
+  } else if (heading.depth === 3) {
+    if (!currentSection) {
+      currentSection = {
+        heading: { depth: 2, slug: heading.slug, text: heading.text },
+        subheadings: [],
+      };
+      sections.push(currentSection);
+    } else {
+      currentSection.subheadings.push(heading);
+    }
+  }
+}
 ---
 
 <aside class="space-y-5">
-  <!-- Tabla de Contenidos -->
-  <div class="rounded-2xl border border-white/10 bg-[#121215] p-5 space-y-4">
+  <!-- Tabla de Contenidos Acordeón -->
+  <div class="rounded-2xl border border-white/10 bg-[#121215] p-4 sm:p-5 space-y-4">
     <div class="flex items-center justify-between border-b border-white/5 pb-3">
       <span
-        class="font-mono text-xs uppercase tracking-wider text-emerald-400 font-medium"
+        class="font-mono text-xs uppercase tracking-wider text-emerald-400 font-medium flex items-center gap-2"
         style={`font-family: var(--font-mono)`}
       >
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
         TABLA DE CONTENIDOS
       </span>
       <span class="text-[10px] font-mono text-neutral-500" style={`font-family: var(--font-mono)`}>
-        {filteredHeadings.length} SECCIONES
+        {sections.length} SECCIONES
       </span>
     </div>
 
     <nav aria-label="Índice del reporte" class="space-y-1 text-xs font-mono" style={`font-family: var(--font-mono)`}>
       <ul class="space-y-1">
         {
-          filteredHeadings.map((heading) => (
-            <li class={heading.depth === 3 ? "pl-3.5 border-l border-white/5 ml-1" : ""}>
-              <a
-                href={`#${heading.slug}`}
-                title={heading.text}
-                class="toc-link block py-1 text-neutral-400 hover:text-white transition-colors duration-150 leading-snug break-words"
-                data-target={heading.slug}
+          sections.map((section) => {
+            const hasSubheadings = section.subheadings.length > 0;
+            return (
+              <li
+                class="toc-group group/toc rounded-lg transition-colors duration-150"
+                data-section-slug={section.heading.slug}
               >
-                {heading.text}
-              </a>
-            </li>
-          ))
+                <div class="flex items-center justify-between gap-1 py-1 px-2 rounded-md transition-colors duration-150 hover:bg-white/[0.04]">
+                  <a
+                    href={`#${section.heading.slug}`}
+                    title={section.heading.text}
+                    class="toc-link toc-parent-link block flex-1 text-neutral-400 group-hover/toc:text-white transition-colors duration-150 leading-snug break-words"
+                    data-target={section.heading.slug}
+                    data-is-parent="true"
+                  >
+                    {section.heading.text}
+                  </a>
+
+                  {hasSubheadings && (
+                    <button
+                      type="button"
+                      class="toc-toggle p-1 -mr-1 text-neutral-500 hover:text-neutral-300 rounded focus:outline-none transition-colors"
+                      aria-label={`Alternar subsecciones de ${section.heading.text}`}
+                      aria-expanded="false"
+                      data-target={section.heading.slug}
+                    >
+                      <svg
+                        class="w-3 h-3 transition-transform duration-200 toc-chevron opacity-70 group-hover/toc:opacity-100"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                {hasSubheadings && (
+                  <div class="toc-subsections">
+                    <ul class="space-y-0.5 pt-1 pb-1.5 pl-3 border-l border-white/10 ml-3 my-0.5">
+                      {section.subheadings.map((sub) => (
+                        <li>
+                          <a
+                            href={`#${sub.slug}`}
+                            title={sub.text}
+                            class="toc-link toc-child-link block py-1 text-[11px] text-neutral-400 hover:text-white transition-colors duration-150 leading-snug break-words"
+                            data-target={sub.slug}
+                            data-parent={section.heading.slug}
+                          >
+                            {sub.text}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            );
+          })
         }
       </ul>
     </nav>
@@ -137,37 +214,189 @@ const filteredHeadings = (headings || []).filter((h) => h.depth === 2 || h.depth
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
   }
+
+  /* Animación de acordeón fluida mediante CSS Grid */
+  .toc-subsections {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 240ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
+    opacity: 0;
+  }
+
+  .toc-subsections > ul {
+    overflow: hidden;
+  }
+
+  /* Expandir en active (scroll-spy), open (clic manual), hover o foco por teclado */
+  .toc-group.is-active .toc-subsections,
+  .toc-group.is-open .toc-subsections,
+  .toc-group:hover .toc-subsections,
+  .toc-group:focus-within .toc-subsections {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  /* Rotación suave del chevron */
+  .toc-chevron {
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform: rotate(0deg);
+  }
+
+  .toc-group.is-active .toc-chevron,
+  .toc-group.is-open .toc-chevron,
+  .toc-group:hover .toc-chevron,
+  .toc-group:focus-within .toc-chevron {
+    transform: rotate(90deg);
+  }
 </style>
 
 <script>
+  let cleanupTOC: (() => void) | null = null;
+
   function setupTOC() {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const id = entry.target.getAttribute("id");
-            document.querySelectorAll(".toc-link").forEach((link) => {
-              if (link.getAttribute("data-target") === id) {
-                link.classList.add("text-emerald-400", "font-medium");
-                link.classList.remove("text-neutral-400");
-              } else {
-                link.classList.remove("text-emerald-400", "font-medium");
-                link.classList.add("text-neutral-400");
-              }
-            });
-          }
-        });
-      },
-      { rootMargin: "0px 0px -70% 0px" }
+    if (cleanupTOC) {
+      cleanupTOC();
+      cleanupTOC = null;
+    }
+
+    const headings = Array.from(
+      document.querySelectorAll(".whitepaper-prose h2, .whitepaper-prose h3")
     );
+    if (!headings.length) return;
 
-    document.querySelectorAll(".whitepaper-prose h2, .whitepaper-prose h3").forEach((h) => {
-      observer.observe(h);
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(".toc-link"));
+    const tocGroups = Array.from(document.querySelectorAll<HTMLElement>(".toc-group"));
+
+    const slugToGroup = new Map<string, HTMLElement>();
+    tocGroups.forEach((group) => {
+      const parentSlug = group.getAttribute("data-section-slug");
+      if (parentSlug) slugToGroup.set(parentSlug, group);
+      group.querySelectorAll<HTMLAnchorElement>(".toc-child-link").forEach((childLink) => {
+        const childSlug = childLink.getAttribute("data-target");
+        if (childSlug) slugToGroup.set(childSlug, group);
+      });
     });
 
-    document.getElementById("toc-back-to-top")?.addEventListener("click", () => {
+    let ticking = false;
+
+    function updateActiveState() {
+      ticking = false;
+
+      const atBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 60;
+
+      let activeHeading = headings[0];
+
+      if (atBottom) {
+        activeHeading = headings[headings.length - 1];
+      } else {
+        for (const h of headings) {
+          const top = h.getBoundingClientRect().top;
+          if (top <= 140) {
+            activeHeading = h;
+          } else {
+            break;
+          }
+        }
+      }
+
+      const activeId = activeHeading.getAttribute("id");
+      const activeGroup = activeId ? slugToGroup.get(activeId) : null;
+
+      tocGroups.forEach((group) => {
+        const isActive = group === activeGroup;
+        if (isActive) {
+          group.classList.add("is-active");
+        } else {
+          group.classList.remove("is-active");
+        }
+        const toggleBtn = group.querySelector<HTMLButtonElement>(".toc-toggle");
+        if (toggleBtn) {
+          toggleBtn.setAttribute("aria-expanded", isActive ? "true" : "false");
+        }
+      });
+
+      tocLinks.forEach((link) => {
+        const target = link.getAttribute("data-target");
+        const isTarget = target === activeId;
+        const isParent = link.getAttribute("data-is-parent") === "true";
+
+        if (isTarget) {
+          link.classList.add("text-emerald-400", "font-medium");
+          link.classList.remove("text-neutral-400", "text-white");
+        } else {
+          link.classList.remove("text-emerald-400", "font-medium");
+          if (isParent) {
+            if (link.closest(".toc-group") === activeGroup) {
+              link.classList.add("text-white");
+              link.classList.remove("text-neutral-400");
+            } else {
+              link.classList.remove("text-white");
+              link.classList.add("text-neutral-400");
+            }
+          } else {
+            link.classList.add("text-neutral-400");
+          }
+        }
+      });
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(updateActiveState);
+        ticking = true;
+      }
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    updateActiveState();
+
+    const toggleButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".toc-toggle"));
+    const clickListeners: Array<{ el: HTMLElement; fn: (e: Event) => void }> = [];
+
+    toggleButtons.forEach((btn) => {
+      const handler = (e: Event) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const group = btn.closest<HTMLElement>(".toc-group");
+        if (group) {
+          const isOpen = group.classList.toggle("is-open");
+          btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        }
+      };
+      btn.addEventListener("click", handler);
+      clickListeners.push({ el: btn, fn: handler });
+    });
+
+    tocLinks.forEach((link) => {
+      const handler = () => {
+        const target = link.getAttribute("data-target");
+        if (target) {
+          const group = slugToGroup.get(target);
+          if (group) {
+            tocGroups.forEach((g) => g.classList.remove("is-active"));
+            group.classList.add("is-active");
+          }
+        }
+      };
+      link.addEventListener("click", handler);
+      clickListeners.push({ el: link, fn: handler });
+    });
+
+    const backToTop = document.getElementById("toc-back-to-top");
+    const onBackToTop = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    };
+    backToTop?.addEventListener("click", onBackToTop);
+
+    cleanupTOC = () => {
+      window.removeEventListener("scroll", onScroll);
+      clickListeners.forEach(({ el, fn }) => {
+        el.removeEventListener("click", fn);
+      });
+      backToTop?.removeEventListener("click", onBackToTop);
+    };
   }
 
   document.addEventListener("astro:page-load", setupTOC);
