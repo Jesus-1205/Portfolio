@@ -1,0 +1,116 @@
+---
+interface Props {
+  src?: string;
+  mp4?: string;
+  webm?: string;
+  caption?: string;
+  alt?: string;
+  title?: string;
+}
+
+const { src, mp4: mp4Prop, webm: webmProp, caption, alt, title } = Astro.props;
+
+let mp4Url = mp4Prop;
+let webmUrl = webmProp;
+
+if (src) {
+  const cleanSrc = src.replace(/\.(gif|mp4|webm)$/i, "");
+  mp4Url = mp4Url || `${cleanSrc}.mp4`;
+  webmUrl = webmUrl || `${cleanSrc}.webm`;
+}
+---
+
+<figure class="video-gif-container my-8 rounded-xl overflow-hidden border border-white/10 bg-[#0c0c10] shadow-2xl transition-all duration-300 hover:border-white/20">
+  {title && (
+    <div class="flex items-center justify-between px-3.5 py-2.5 bg-white/[0.03] border-b border-white/5">
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5" aria-hidden="true">
+          <span class="h-2.5 w-2.5 rounded-full bg-red-500/80"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-yellow-500/80"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-green-500/80"></span>
+        </div>
+        <span class="font-mono text-xs text-neutral-400 font-medium tracking-wide">
+          {title}
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-mono text-[10px] text-emerald-400/90 tracking-wider uppercase font-semibold">
+          LIVE DEMO
+        </span>
+      </div>
+    </div>
+  )}
+
+  <div class="relative w-full overflow-hidden bg-black/60 flex items-center justify-center group cursor-pointer">
+    <video
+      autoplay
+      loop
+      muted
+      playsinline
+      preload="metadata"
+      class="w-full h-auto block m-0 rounded-none border-0 object-contain"
+      aria-label={alt || caption || "Demostración en video"}
+    >
+      {webmUrl && <source src={webmUrl} type="video/webm" />}
+      {mp4Url && <source src={mp4Url} type="video/mp4" />}
+      Tu navegador no soporta reproducción de video.
+    </video>
+
+    <!-- Overlay sutil con indicador de pausa al hacer click -->
+    <div class="video-play-indicator absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 pointer-events-none">
+      <div class="rounded-full bg-black/70 p-3 border border-white/20 text-white backdrop-blur-sm">
+        <svg class="play-icon w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <svg class="pause-icon w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  {caption && (
+    <figcaption class="px-4 py-3 text-xs text-neutral-300 bg-white/[0.02] border-t border-white/5 font-sans leading-relaxed flex items-start gap-2">
+      <span class="text-emerald-400 font-mono text-[10px] uppercase tracking-wider font-semibold shrink-0 pt-0.5">
+        DEMO ·
+      </span>
+      <span>{caption}</span>
+    </figcaption>
+  )}
+</figure>
+
+<script>
+  // Permitir click en el video para alternar entre pausa y reproducción
+  document.querySelectorAll<HTMLElement>('.video-gif-container').forEach((container) => {
+    const video = container.querySelector('video');
+    const indicator = container.querySelector('.video-play-indicator');
+    const playIcon = container.querySelector('.play-icon');
+    const pauseIcon = container.querySelector('.pause-icon');
+
+    if (!video || !indicator) return;
+
+    video.addEventListener('click', () => {
+      if (video.paused) {
+        video.play();
+        showIndicator(false);
+      } else {
+        video.pause();
+        showIndicator(true);
+      }
+    });
+
+    function showIndicator(isPaused: boolean) {
+      if (playIcon && pauseIcon) {
+        playIcon.classList.toggle('hidden', !isPaused);
+        pauseIcon.classList.toggle('hidden', isPaused);
+      }
+      indicator?.classList.remove('opacity-0');
+      setTimeout(() => {
+        if (!video?.paused) {
+          indicator?.classList.add('opacity-0');
+        }
+      }, 700);
+    }
+  });
+</script>

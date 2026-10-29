@@ -67,7 +67,7 @@ methodologies:
     total: 2662
 
 mediaArtifacts:
-  featuredDemo: "/assets/projects/yanesu/demo-pos-checkout.gif"
+  featuredDemo: "/assets/projects/yanesu/demo-pos-checkout.mp4"
   screenshots:
     - src: "/assets/projects/yanesu/screenshot-pos.png"
       caption: "Terminal de mostrador (POS) con soporte para split payments bimoneda y teclado rápido."
@@ -122,10 +122,13 @@ Artefactos visuales y flujos de trabajo clave en funcionamiento real:
 ### 1. Terminal POS: Ergonomía de Teclado y Split Payments
 Navegación acelerada por atajos físicos (`F2`/`F10`), soporte para pagos divididos multimoneda y cola de espera (*Hold Queue*).
 
-![Cobro rápido por teclado y split payment USD/VES](/assets/projects/yanesu/demo-pos-checkout.gif)
-*Checkout POS en vivo: distribución transaccional en múltiples instrumentos (USD efectivo + Débito VES) y cálculo dinámico de vuelto.*
+<VideoGif
+  src="/assets/projects/yanesu/demo-pos-checkout"
+  title="pos_checkout_dual_currency.mp4"
+  caption="Checkout POS en vivo: distribución transaccional en múltiples instrumentos (USD efectivo + Débito VES) y cálculo dinámico de vuelto."
+/>
 
-![Terminal de mostrador bimodal](/assets/projects/yanesu/screenshot-pos.png)
+![Terminal de mostrador bimodal](../../assets/projects/yanesu/screenshot-pos.png)
 *Vista de mostrador: catálogo con filtrado instantáneo, precios simultáneos en USD/VES y estados de pedido.*
 
 ---
@@ -133,18 +136,24 @@ Navegación acelerada por atajos físicos (`F2`/`F10`), soporte para pagos divid
 ### 2. Ingestión Asistida de Facturas con IA Multimodal (Human-in-the-Loop)
 Pipeline con Google Gemini API que digitaliza facturas y notas de entrega físicas. Extrae metadatos y líneas de artículos, colocando los nombres originales como referencia visual directa sobre cada selector (`#1 BELMONT`) y habilitando un visor modal flotante del documento para cotejo manual instantáneo.
 
-![Digitalización asistida de facturas con IA Multimodal](/assets/projects/yanesu/demo-gemini-ocr.gif)
-*Extracción asistida con Gemini: precarga automática de metadatos, referencia textual del comprobante sobre el input de búsqueda y resolución asistida hacia el catálogo local.*
+<VideoGif
+  src="/assets/projects/yanesu/demo-gemini-ocr"
+  title="gemini_ocr_invoice_extraction.mp4"
+  caption="Extracción asistida con Gemini: precarga automática de metadatos, referencia textual del comprobante sobre el input de búsqueda y resolución asistida hacia el catálogo local."
+/>
 
 ---
 
 ### 3. Rendimiento y Navegación Gerencial Post-Optimización
 Respuesta sub-100ms en tableros ejecutivos tras erradicar cuellos de botella N+1 en SQLAlchemy y delegar agregaciones a SQL nativo.
 
-![Navegación reactiva post-optimización](/assets/projects/yanesu/demo-performance-navigation.gif)
-*Transición instantánea entre módulos del ERP sin bloqueo de hilo tras la optimización analítica de consultas.*
+<VideoGif
+  src="/assets/projects/yanesu/demo-performance-navigation"
+  title="erp_sub100ms_navigation.mp4"
+  caption="Transición instantánea entre módulos del ERP sin bloqueo de hilo tras la optimización analítica de consultas."
+/>
 
-![Panel de Reportes](/assets/projects/yanesu/screenshot-analytics.png)
+![Panel de Reportes](../../assets/projects/yanesu/screenshot-analytics.png)
 *Panel de Reportes Gerenciales: consolidación analítica de ingresos brutos, costos de mercancía, margen de ganancia neta y distribución de ventas por períodos y métodos de pago.*
 
 ---

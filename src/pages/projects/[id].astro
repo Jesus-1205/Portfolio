@@ -6,6 +6,8 @@ import Footer from "../../components/Footer.astro";
 import WhitepaperHero from "../../components/whitepaper/WhitepaperHero.astro";
 import TableOfContents from "../../components/whitepaper/TableOfContents.astro";
 import ProjectNavigation from "../../components/whitepaper/ProjectNavigation.astro";
+import CustomMDXImage from "../../components/whitepaper/CustomMDXImage.astro";
+import VideoGif from "../../components/whitepaper/VideoGif.astro";
 
 export async function getStaticPaths() {
   const projects = (await getCollection("projects")).sort(
@@ -44,7 +46,7 @@ const { Content, headings } = await render(project);
 
       <!-- Columna de Lectura Técnica -->
       <article class="lg:col-span-8 order-1 lg:order-2 whitepaper-prose min-w-0">
-        <Content />
+        <Content components={{ img: CustomMDXImage, VideoGif }} />
       </article>
     </div>
 
