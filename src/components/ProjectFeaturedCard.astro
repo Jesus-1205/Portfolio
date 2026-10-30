@@ -113,7 +113,7 @@ const allStackTags = [
       class="font-mono text-xs text-emerald-400 tracking-wider uppercase"
       style={`font-family: var(--font-mono)`}
     >
-      POS &amp; ERP TRANSACCIONAL&nbsp;·&nbsp;{data.timeframe}
+      {data.category ? data.category.toUpperCase() : "POS & ERP TRANSACCIONAL"}&nbsp;·&nbsp;{data.timeframe}
     </div>
 
     <!-- Título con View Transition -->

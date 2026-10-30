@@ -7,6 +7,7 @@ const projectCollection = defineCollection({
     schema: z.object({
         title: z.string(),
         tagline: z.string(),
+        category: z.string().optional(),
         clientOrContext: z.string(),
         timeframe: z.string(),
         productionStatus: z.enum([

@@ -9,13 +9,8 @@ interface Props {
 const { project, index = 2 } = Astro.props;
 const { data } = project;
 
-// Filtrado de métricas clave (Estrategia A: máxima síntesis cuantitativa)
-const targetLabels = ["Historial Migrado", "Consistencia Fiscal"];
-const matchedMetrics = data.heroMetrics.filter((m) => targetLabels.includes(m.label));
-const keyMetrics = (matchedMetrics.length === 2 ? matchedMetrics : data.heroMetrics.slice(0, 2)).map((m) => ({
-  ...m,
-  label: m.label === "Historial Migrado" ? "Historial Migrado (8 años)" : m.label,
-}));
+// Métricas cuantitativas clave para escaneo rápido (primeras 2 métricas del proyecto)
+const keyMetrics = data.heroMetrics.slice(0, 2);
 
 // Aplanar stack a partir de los metadatos del proyecto (limpio de versiones desde el MDX)
 const allStackTags = [
@@ -25,8 +20,8 @@ const allStackTags = [
   ...data.stack.devops,
 ];
 
-// Índice numérico formateado (02, 03, ...)
-const watermark = String(index).padStart(2, "0");
+// Índice numérico formateado a partir de data.order o prop index (02, 03, ...)
+const watermark = String(data.order ?? index ?? 2).padStart(2, "0");
 ---
 
 <article
@@ -47,8 +42,8 @@ const watermark = String(index).padStart(2, "0");
       class="font-mono text-xs text-emerald-400 tracking-wider uppercase flex items-center gap-2"
       style={`font-family: var(--font-mono)`}
     >
-      <span>ERP AUTOMOTRIZ &amp; ETL</span>
-      <span class="text-neutral-600">·</span>
+      {data.category && <span>{data.category}</span>}
+      {data.category && data.timeframe && <span class="text-neutral-600">·</span>}
       <span class="text-neutral-400">{data.timeframe}</span>
     </div>
 
