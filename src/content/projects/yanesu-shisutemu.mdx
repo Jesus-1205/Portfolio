@@ -1,6 +1,6 @@
 ---
 title: "Yanesu Shisutemu"
-tagline: "Software ERP & POS Modular a Medida: Arquitectura Transaccional Bimoneda en Cloud VPS y Desktop"
+tagline: "Software ERP y POS bimoneda con arquitectura desacoplada para Cloud VPS y terminales de escritorio offline, precisión financiera Decimal y sincronización en tiempo real."
 category: "POS & ERP Transaccional"
 clientOrContext: "Comercio Minorista & Mayorista (ERP Modular + Control de Retornables)"
 timeframe: "Jul 2026 – Presente"
@@ -14,41 +14,32 @@ links:
   repo: "https://github.com/Jesus-1205/yanesu-shisutemu"
 
 heroMetrics:
-  - label: "Latencia Promedio"
-    value: "63.04 ms"
-    detail: "-65.8% de reducción de tiempo frente al MVP (2.92x más rápido)"
-  - label: "Carga de Red"
-    value: "26.80 KB"
-    detail: "-76.3% de payload transferido en consultas críticas"
-  - label: "Suite de Calidad"
+  - label: "Suite Pytest + Vitest (100%)"
     value: "2.662 Tests"
-    detail: "100% pasando (972 en Pytest + 1.690 en Vitest)"
-  - label: "Reconocimiento OSS"
-    value: "XERJ Corpus Hub"
+    detail: "Cobertura exhaustiva y disciplina de testing automatizado (972 Pytest + 1.690 Vitest)"
+  - label: "Solución de Referencia IA (+17k ⭐)"
+    value: "XERJ Corpus"
     detail: "Código de seed & testing indexado como referencia para agentes de IA (+17k ⭐ en GitHub)"
+  - label: "Push-down SQL en Consultas"
+    value: "-65.8% Latencia"
+    detail: "Optimización de red reduciendo el tiempo de respuesta de 184.7 ms a 63.04 ms"
+  - label: "Cero Floats (Precisión Financiera)"
+    value: "Mandato Decimal"
+    detail: "Integridad contable estricta en operaciones bimoneda eliminando errores de redondeo"
 
 stack:
   frontend:
-    - "React 19.2"
-    - "TypeScript 5.7"
-    - "Tailwind CSS v4.3"
-    - "Zustand 5.0"
-    - "Vite 6"
+    - "React 19"
+    - "TypeScript"
+    - "Zustand"
   backend:
-    - "Python 3.12"
-    - "FastAPI 0.115"
-    - "Pydantic v2.13"
+    - "FastAPI"
     - "SQLAlchemy 2.0"
-    - "Alembic 1.14"
   database:
-    - "PostgreSQL 16 (Cloud VPS)"
-    - "SQLite 3 (Desktop Edge)"
+    - "PostgreSQL 16"
   devops:
-    - "Docker Compose v2"
-    - "Nginx Reverse Proxy"
+    - "Docker"
     - "Tauri 2 (Rust)"
-    - "GitHub Actions CI/CD"
-    - "n8n Automation Engine"
 
 architecture:
   pattern: "Desacoplada: REST API en Cloud VPS (Docker Compose + PostgreSQL 16) con Soporte Desktop Híbrido (Tauri 2 + SQLite)"
