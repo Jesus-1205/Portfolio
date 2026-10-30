@@ -24,7 +24,7 @@ src/pages/
 #### A. Home (`/`)
 
 1. **Hero Técnico:** Declaración de perfil, foco de desarrollo en TypeScript y FastAPI, y resumen de impacto: sistemas transaccionales en producción continua, reducción del 65.8% en latencias críticas y suites con más de 2.600 pruebas automatizadas.
-2. **Featured Engineering Whitepapers:** Tarjetas técnicas de _Yanesu Shisutemu_ (POS/ERP Cloud & Desktop) y _Taller-Admin v2.0_ (ERP de Taller & Migración ETL) con métricas de impacto, arquitectura y enlace al desglose.
+2. **Featured Engineering Whitepapers:** Tarjetas técnicas de _Yanesu Shisutemu_ (POS/ERP Cloud & Desktop) y _Taller-Admin v2.0_ (Sistema Transaccional ETL & Migración) con métricas de impacto, arquitectura y enlace al desglose.
 3. **Core Competencies (Por Capas):**
    - _Frontend:_ React 19, TypeScript, Zustand, Tailwind CSS, Vite, HTML5 Semántico, Jinja2.
    - _Backend & Datos:_ FastAPI, Python, SQLAlchemy 2.0, Pydantic v2, PostgreSQL 16, SQLite, MariaDB/MySQL.
@@ -138,7 +138,7 @@ export const collections = {
   - _Frontend (1.690 tests en Vitest):_ Simulación de teclado rápido de cajero, validación de cobro mixto (_split payment_) y tiendas Zustand aisladas.
 - **Automatización Agéntica:** Extracción estructurada de facturas físicas con Gemini AI OCR y bot de monitoreo ejecutivo en Telegram con 11 herramientas vía n8n.
 
-### Proyecto 2: Taller-Admin v2.0 — ERP Automotriz & Migración de Datos Legados
+### Proyecto 2: Taller-Admin v2.0 — Sistema Transaccional ETL & Migración de Datos Legados
 
 - **Contexto y Problema:** Modernización digital de un centro de servicios automotrices con más de 8 años de trayectoria y registros descentralizados en múltiples hojas de cálculo de Excel.
 - **Estrategia ETL y Diseño de Base de Datos:**

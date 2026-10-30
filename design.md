@@ -109,7 +109,7 @@ La visualización de proyectos se divide en dos niveles de profundidad para dest
 │  SECONDARY BENTO: TALLER-ADMIN    │  SECONDARY BENTO: INFRA & SCRIPTS  │
 ├───────────────────────────────────┼────────────────────────────────────┤
 │ - Marca de agua "02"              │ - Marca de agua "03"               │
-│ - Dominio: ERP Taller / ETL       │ - Dominio: Automatización Linux    │
+│ - Dominio: Sistema Transaccional / ETL │ - Dominio: Automatización Linux    │
 │ - Métrica: +7.000 filas migradas  │ - Métrica: Pipelines Bash / Cron   │
 │ - Highlights: .with_for_update()  │ - Highlights: Agentes Telegram/n8n │
 │ - Stack: FastAPI / Jinja / SQLite │ - Stack: Docker / cPanel / systemd │
