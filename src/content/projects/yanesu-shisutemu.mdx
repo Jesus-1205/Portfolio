@@ -24,7 +24,7 @@ heroMetrics:
     detail: "100% pasando (972 en Pytest + 1.690 en Vitest)"
   - label: "Reconocimiento OSS"
     value: "XERJ Corpus Hub"
-    detail: "Código de seed & testing indexado como referencia para agentes de IA (+16k ⭐ en GitHub)"
+    detail: "Código de seed & testing indexado como referencia para agentes de IA (+17k ⭐ en GitHub)"
 
 stack:
   frontend:
@@ -101,7 +101,7 @@ El sistema fue concebido y opera activamente en producción sobre un **servidor 
   </div>
   <div class="text-xs text-neutral-400 leading-relaxed !my-0">
     Operación con 250+ SKUs de alta rotación y 50-250 ventas diarias. Split
-    payments combinados (efectivo, tarjeta, Pago Móvil) operables al 100%
+    payments combinados (efectivo, tarjeta, Pago Móvil) comodamente operables
     mediante teclado físico.
   </div>
 </div>
@@ -415,7 +415,9 @@ export function usePosKeyboard(
         }
         if (document.activeElement === searchRef.current) {
           (searchRef.current as HTMLInputElement).value = "";
-          searchRef.current?.dispatchEvent(new Event("input", { bubbles: true }));
+          searchRef.current?.dispatchEvent(
+            new Event("input", { bubbles: true }),
+          );
         }
         return;
       }
@@ -441,7 +443,8 @@ import { useExchangeRateStore } from "@/stores/exchangeRateStore";
 function computeTotals(items: Record<string, CartItem>): CartTotals {
   const acc = { monto_exento_usd: 0, base_imponible_usd: 0, monto_iva_usd: 0 };
   for (const item of Object.values(items)) {
-    const subtotal = Math.round(item.cantidad * item.precio_unitario_usd * 100) / 100;
+    const subtotal =
+      Math.round(item.cantidad * item.precio_unitario_usd * 100) / 100;
     if (item.tipo_iva === "EXENTO") {
       acc.monto_exento_usd += subtotal;
     } else {
@@ -463,26 +466,35 @@ export const useCartStore = create<CartState>((set, get) => ({
   addItem: (product, tipo_empaque, cantidad = 1) => {
     const state = get();
     const cartItemId = `${product.id}_${tipo_empaque}`;
-    const precio = tipo_empaque === "UNIDAD"
-      ? Number(product.precio_unidad_usd)
-      : Number(product.precio_caja_usd);
+    const precio =
+      tipo_empaque === "UNIDAD"
+        ? Number(product.precio_unidad_usd)
+        : Number(product.precio_caja_usd);
     const iva = product.tipo_iva === "GRAVADO" ? 16 : 0;
 
     const existing = state.items[cartItemId];
     if (existing) {
       const newCantidad = existing.cantidad + cantidad;
-      const newUnidades = tipo_empaque === "CAJA"
-        ? newCantidad * product.unidades_por_caja
-        : newCantidad;
+      const newUnidades =
+        tipo_empaque === "CAJA"
+          ? newCantidad * product.unidades_por_caja
+          : newCantidad;
       set({
         items: {
           ...state.items,
-          [cartItemId]: { ...existing, cantidad: newCantidad, unidades_descontadas: newUnidades },
+          [cartItemId]: {
+            ...existing,
+            cantidad: newCantidad,
+            unidades_descontadas: newUnidades,
+          },
         },
       });
     } else {
       const isEmpty = Object.keys(state.items).length === 0;
-      const unidades = tipo_empaque === "CAJA" ? cantidad * product.unidades_por_caja : cantidad;
+      const unidades =
+        tipo_empaque === "CAJA"
+          ? cantidad * product.unidades_por_caja
+          : cantidad;
       const newItem: CartItem = {
         cartItemId,
         producto_id: product.id,
@@ -497,7 +509,9 @@ export const useCartStore = create<CartState>((set, get) => ({
       };
       set({
         items: { ...state.items, [cartItemId]: newItem },
-        snapshotTasa: isEmpty ? useExchangeRateStore.getState().tasa : state.snapshotTasa,
+        snapshotTasa: isEmpty
+          ? useExchangeRateStore.getState().tasa
+          : state.snapshotTasa,
       });
     }
   },
@@ -519,7 +533,7 @@ Bajo la disciplina de **Spec-Driven Development (SDD)**, se especificó y ejecut
 ```python
 def get_category_analytics(db: Session) -> CategoryAnalyticsResponse:
     """Push-down SQL: Delegación del cómputo de stock, ventas e ingresos al motor relacional."""
-    
+
     # 1. Agregación relacional de stock por categoría
     ps = (
         select(
