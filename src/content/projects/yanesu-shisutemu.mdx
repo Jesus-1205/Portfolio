@@ -35,11 +35,13 @@ stack:
   backend:
     - "FastAPI"
     - "SQLAlchemy 2.0"
+    - "Pydantic v2"
   database:
     - "PostgreSQL 16"
   devops:
     - "Docker"
     - "Tauri 2 (Rust)"
+    - "n8n (Workflows & M2M)"
 
 architecture:
   pattern: "Desacoplada: REST API en Cloud VPS (Docker Compose + PostgreSQL 16) con Soporte Desktop Híbrido (Tauri 2 + SQLite)"
@@ -184,10 +186,10 @@ Para garantizar alta concurrencia multiusuario en administración remota y, simu
 
 El backend en Python 3.12 y FastAPI implementa una separación estricta para garantizar aislamiento transaccional y testeabilidad total:
 
-1. **Controladores y Rutas (`app/routes/`):** Routers modulares (`sales.py`, `invoices.py`, `products.py`, `reports.py`, `exchange_rates.py`). Ciclo de vida HTTP y Server-Sent Events (SSE), inyección `Depends(get_db)` y mapeo de errores controlados.
-2. **Servicios de Dominio (`app/services/`):** Lógica transaccional pura (`sales_service.py`, `invoice_service.py`, `gemini_service.py`, `broadcaster.py`, `exchange_rate_service.py`) coordinando operaciones bajo `db.commit()` y `db.rollback()`.
-3. **Esquemas y Contratos (`app/schemas/`):** Validación en frontera con Pydantic v2 (`sale.py`, `invoice.py`, `product.py`, `exchange_rate.py`), garantizando coerción estricta a `Decimal` y rechazo de tipos flotantes.
-4. **Persistencia y Modelado (`app/models/`):** Tipado declarativo en SQLAlchemy 2.0 (`sale.py`, `invoice.py`, `product.py`, `retornable.py`, `category.py`, `combo.py`) con `Mapped[...]` e integridad referencial `RESTRICT`.
+1. **Controladores y Rutas (`app/routes/`):** Routers modulares (`sales.py`, `invoices.py`, `products.py`, `reports.py`, `exchange_rates.py`, `n8n_agent.py`, `webhooks.py`). Ciclo de vida HTTP, autenticación M2M (`X-API-Key`), Server-Sent Events (SSE), inyección `Depends(get_db)` y mapeo de errores controlados.
+2. **Servicios de Dominio (`app/services/`):** Lógica transaccional pura (`sales_service.py`, `invoice_service.py`, `n8n_agent_service.py`, `gemini_service.py`, `broadcaster.py`, `exchange_rate_service.py`) coordinando operaciones bajo `db.commit()` y `db.rollback()`.
+3. **Esquemas y Contratos (`app/schemas/`):** Validación en frontera con Pydantic v2 (`sale.py`, `invoice.py`, `product.py`, `exchange_rate.py`, `n8n_agent.py`), garantizando contratos estrictos para inputs humanos y de agentes IA.
+4. **Persistencia y Modelado (`app/models/`):** Tipado declarativo en SQLAlchemy 2.0 (`sale.py`, `invoice.py`, `product.py`, `retornable.py`, `category.py`, `combo.py`, `api_key.py`) con `Mapped[...]` e integridad referencial `RESTRICT`.
 
 ### Decisiones de Arquitectura Registradas (ADRs)
 
@@ -318,44 +320,57 @@ def analyze_invoice_from_image(
 
 ---
 
-### Reto 3: Desacoplamiento de Conexiones DB en SSE (/stream) (&lt; 10 ms)
+### Reto 3: Arquitectura M2M: Endpoints como "Agent Tools" y Orquestación con n8n & Telegram
 
-Para sincronizar la cotización del BCV en tiempo real mediante Server-Sent Events sin agotar el pool de SQLAlchemy (`QueuePool`), se aisló la consulta inicial a un destello de menos de 10 ms, cerrando la sesión antes de entrar al bucle asíncrono del evento:
+**Problema:**  
+La gestión de un comercio minorista no ocurre únicamente frente al terminal de caja: los propietarios requieren supervisar ventas, ticket promedio, horas pico y alertas de cuentas por pagar en tiempo real desde sus dispositivos móviles. No obstante, dar acceso directo a un bot conversacional o a herramientas externas sobre la base de datos transaccional introduciría graves riesgos de inyección, consultas no indexadas y vulneración del perímetro de seguridad.
 
-<CodeWindow title="backend/app/routes/exchange_rates.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/routes/exchange_rates.py">
+**Solución Arquitectónica:**  
+Se implementó una capa de integración **Machine-to-Machine (M2M)** desacoplada sobre FastAPI gobernada por dos principios:
+1. **Seguridad y Auditoría M2M:** Autenticación estricta mediante cabecera `X-API-Key` vinculada al modelo `ApiKey`. Cada invocación ejecuta `log_action` registrando el cliente autenticado (`m2m:{api_key.name}`), IP, ruta y parámetros de búsqueda para trazabilidad inmutable.
+2. **Catálogo de "Agent Tools" para LLM en Telegram:** El router `/n8n/tools/*` expone contratos Pydantic v2 diseñados específicamente para *Function Calling* (`products/search` con bandera `low_stock`, `sales/peak-hours`, `sales/metrics`, `invoices/search` por vencimiento). Un agente en **n8n** interpreta consultas en lenguaje natural desde un bot de Telegram e invoca estas herramientas de solo lectura sin comprometer credenciales ni saturar el motor relacional.
+3. **Reportería Automatizada & Webhooks Idempotentes:** Tareas cron en n8n consumen `/n8n/reports/daily` y `/weekly` para publicar reportes ejecutivos consolidados (total facturado USD/VES, top 5 productos, desglose por métodos de pago y cuentas por pagar próximas). En sentido inverso, el webhook `POST /webhooks/bcv-sync` recibe la tasa oficial de cambio con verificación de idempotencia (201 si es una nueva tasa, 200 si persiste sin cambios).
+
+<CodeWindow title="backend/app/routes/n8n_agent.py" githubUrl="https://github.com/Jesus-1205/yanesu-shisutemu/blob/master/backend/app/routes/n8n_agent.py">
 
 ```python
-@router.get("/exchange-rates/stream")
-async def stream_exchange_rates(
+router = APIRouter(prefix="/n8n", tags=["n8n-agent"])
+
+def _audit(api_key: ApiKey, request: Request, endpoint: str, detail: str = ""):
+    """Trazabilidad inmutable de consumo M2M en auditoría interna."""
+    ip = request.client.host if request.client else "m2m"
+    log_action(
+        usuario=f"m2m:{api_key.name}",
+        ip=ip,
+        accion="CONSULTA_M2M",
+        entidad="n8n_agent",
+        detalle=f"{endpoint} - {detail}".strip(" -"),
+    )
+
+@router.get("/reports/daily", status_code=status.HTTP_200_OK, response_model=DailyReportOut)
+def get_daily_report_endpoint(
     request: Request,
-    user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    target_date: date | None = Query(None, description="Fecha a consultar (YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+    api_key: ApiKey = Depends(verify_api_key),
 ):
-    # 1. Extracción veloz de cotización (<10 ms) y desacoplamiento de sesión
-    latest_rate = db.scalars(
-        select(ExchangeRate).order_by(ExchangeRate.fecha.desc()).limit(1)
-    ).first()
+    """Genera reporte diario consolidado para despacho automático a Telegram vía n8n."""
+    _audit(api_key, request, "/reports/daily", f"date={target_date}")
+    return get_daily_sales_report(db, target_date=target_date)
 
-    if latest_rate:
-        db.expunge(latest_rate)
-    db.expunge(user)
-    db.close()  # Liberación inmediata de la conexión al pool
-
-    # 2. Generador asíncrono vinculado al bus de memoria sin retener DB
-    async def event_generator():
-        queue = await event_bus.subscribe("exchange_rates")
-        try:
-            if latest_rate:
-                yield f"data: {latest_rate.model_dump_json()}\n\n"
-            while True:
-                if await request.is_disconnected():
-                    break
-                new_rate_event = await queue.get()
-                yield f"data: {new_rate_event}\n\n"
-        finally:
-            await event_bus.unsubscribe("exchange_rates", queue)
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+@router.get("/tools/sales/peak-hours", status_code=status.HTTP_200_OK, response_model=List[PeakHoursItem])
+def tool_sales_peak_hours(
+    request: Request,
+    start_date: date | None = Query(None, description="Fecha inicio (YYYY-MM-DD)"),
+    end_date: date | None = Query(None, description="Fecha fin (YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+    api_key: ApiKey = Depends(verify_api_key),
+):
+    """Tool para Agente LLM: Distribución y franjas horarias de mayor venta."""
+    s_date = start_date or ve_today()
+    e_date = end_date or s_date
+    _audit(api_key, request, "/tools/sales/peak-hours", f"range={s_date} to {e_date}")
+    return get_sales_peak_hours(db, start_date=s_date, end_date=e_date)
 ```
 
 </CodeWindow>
@@ -650,3 +665,4 @@ El despliegue productivo de **Yanesu Shisutemu** demuestra que las restricciones
 2. **Garantía Contable Inmutable:** El mandato "Zero-Floats" con `Decimal` y validación estricta de escala en Pydantic v2 garantizan cero descuadres de caja, respaldados por 2.662 pruebas automatizadas.
 3. **Telemetría y Push-down SQL:** La refactorización analítica redujo la latencia media en un -65.8% y el tráfico en un -76.3%, delegando el trabajo pesado de costos y márgenes al motor relacional mediante SQLAlchemy 2.0.
 4. **Inteligencia Práctica (Human-in-the-Loop):** La integración de visión multimodal con Gemini API resolvió el cuello de botella de compras sin caer en las trampas del fuzzy match ante la jerga informal de notas de entrega, reduciendo drásticamente los tiempos de carga de inventario con un cotejo asistido de alta precisión.
+5. **Automatización Agéntica y Control Remoto (M2M + n8n/Telegram):** El diseño de endpoints tipados como *Agent Tools* y la orquestación de reportes programados transformaron el ERP en una plataforma proactiva, permitiendo auditoría y monitoreo gerencial en lenguaje natural sin comprometer la base de datos.
