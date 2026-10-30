@@ -1,4 +1,8 @@
 ---
+import "@fontsource-variable/inter";
+import "@fontsource/instrument-serif/400.css";
+import "@fontsource/instrument-serif/400-italic.css";
+import "@fontsource-variable/jetbrains-mono";
 import "../styles/global.css";
 import { ClientRouter } from "astro:transitions";
 
@@ -11,6 +15,8 @@ const {
   title = "Jesús Blanco | Full-Stack Software Developer",
   description = "Full-Stack Software Developer specializing in transactional systems, database optimization, and production-grade deployments with Python, TypeScript, and modern web technologies.",
 } = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? "https://jesus-blanco.pages.dev");
 ---
 
 <!doctype html>
@@ -19,6 +25,7 @@ const {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <meta name="author" content="Jesús Blanco" />
@@ -36,14 +43,6 @@ const {
     <meta name="twitter:description" content={description} />
 
     <title>{title}</title>
-
-    <!-- Tipografía: Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
 
     <ClientRouter />
   </head>

@@ -4,9 +4,9 @@
    Familias Tipográficas
    ═══════════════════════════════════════════════ */
 :root {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "Fira Code", monospace;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Fira Code", monospace;
 }
 
 body {
