@@ -1,0 +1,80 @@
+---
+import type { MarkdownHeading } from "astro";
+
+interface Props {
+  headings?: MarkdownHeading[];
+}
+
+const { headings = [] } = Astro.props;
+
+const validHeadings = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{
+  validHeadings.length > 0 && (
+    <div class="lg:hidden w-full mb-8 not-prose">
+      <details class="mobile-toc-details group rounded-xl border border-white/10 bg-[#121215] p-3 text-xs">
+        <summary
+          class="flex cursor-pointer items-center justify-between font-mono font-medium select-none list-none [&::-webkit-details-marker]:hidden"
+          style={`font-family: var(--font-mono)`}
+        >
+          <span class="flex items-center gap-2 text-emerald-400 font-semibold uppercase text-[11px] tracking-wider">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Índice del documento
+            <span class="text-neutral-500 font-normal lowercase">
+              ({validHeadings.length} {validHeadings.length === 1 ? "sección" : "secciones"})
+            </span>
+          </span>
+          <svg
+            class="w-4 h-4 text-neutral-400 transition-transform duration-200 group-open:rotate-180"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </summary>
+
+        <nav
+          aria-label="Índice móvil del documento"
+          class="mt-3 pt-3 border-t border-white/5 space-y-1 max-h-72 overflow-y-auto custom-scrollbar font-mono text-xs"
+          style={`font-family: var(--font-mono)`}
+        >
+          {validHeadings.map((h) => (
+            <a
+              href={`#${h.slug}`}
+              class:list={[
+                "mobile-toc-link block py-1.5 px-2 rounded-md transition-colors duration-150 leading-snug break-words",
+                h.depth === 3
+                  ? "pl-6 text-[11px] text-neutral-400 hover:text-white hover:bg-white/[0.04]"
+                  : "text-neutral-300 font-medium hover:text-white hover:bg-white/[0.04]",
+              ]}
+            >
+              {h.text}
+            </a>
+          ))}
+        </nav>
+      </details>
+    </div>
+  )
+}
+
+<script>
+  function setupMobileTOC() {
+    const detailsList = document.querySelectorAll<HTMLDetailsElement>(".mobile-toc-details");
+    detailsList.forEach((details) => {
+      const links = details.querySelectorAll<HTMLAnchorElement>(".mobile-toc-link");
+      links.forEach((link) => {
+        link.addEventListener("click", () => {
+          details.open = false;
+        });
+      });
+    });
+  }
+
+  document.addEventListener("astro:page-load", setupMobileTOC);
+</script>

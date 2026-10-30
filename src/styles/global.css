@@ -54,6 +54,7 @@ html {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -76,6 +77,7 @@ html {
     opacity: 0;
     transform: translateY(14px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -84,4 +86,292 @@ html {
 
 .reveal-on-scroll {
   animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ═══════════════════════════════════════════════
+   Estilos Editoriales de Lectura Técnica (Whitepaper Prose)
+   ═══════════════════════════════════════════════ */
+.whitepaper-prose {
+  color: #d4d4d8;
+  /* zinc-300 */
+  line-height: 1.75;
+}
+
+.whitepaper-prose h2 {
+  color: #fafafa;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 3rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: -0.02em;
+  scroll-margin-top: 6rem;
+}
+
+.whitepaper-prose h3 {
+  color: #f4f4f5;
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 6rem;
+}
+
+.whitepaper-prose h4 {
+  color: #e4e4e7;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 6rem;
+}
+
+.whitepaper-prose p {
+  margin-bottom: 1.25rem;
+}
+
+.whitepaper-prose strong {
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.whitepaper-prose ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.whitepaper-prose ul>li {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.whitepaper-prose ul>li::before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.65rem;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 9999px;
+  background-color: #10b981;
+}
+
+.whitepaper-prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.whitepaper-prose blockquote {
+  border-left: 3px solid #10b981;
+  background-color: rgba(16, 185, 129, 0.05);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  border-radius: 0 0.75rem 0.75rem 0;
+  color: #d4d4d8;
+  font-style: normal;
+}
+
+.whitepaper-prose pre {
+  background-color: #0c0c0e !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.whitepaper-prose :not(pre)>code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.375rem;
+  color: #38bdf8;
+}
+
+.whitepaper-prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 2rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.whitepaper-prose th {
+  background-color: #121215;
+  color: #fafafa;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}
+
+.whitepaper-prose td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background-color: rgba(18, 18, 21, 0.4);
+}
+
+.whitepaper-prose tr:last-child td {
+  border-bottom: none;
+}
+
+.whitepaper-prose img {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 1.5rem 0;
+  max-width: 100%;
+  height: auto;
+}
+
+.whitepaper-prose hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 3rem 0;
+}
+
+/* ═══════════════════════════════════════════════
+   Bloques de Código Estilo macOS Window
+   ═══════════════════════════════════════════════ */
+.whitepaper-code-window {
+  margin: 1.75rem 0;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #0c0c10;
+  overflow: hidden;
+}
+
+.whitepaper-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.whitepaper-code-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.whitepaper-code-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  opacity: 0.85;
+}
+
+.whitepaper-code-dot-close {
+  background-color: #ff5f56;
+}
+
+.whitepaper-code-dot-minimize {
+  background-color: #ffbd2e;
+}
+
+.whitepaper-code-dot-maximize {
+  background-color: #27c93f;
+}
+
+.whitepaper-code-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #a1a1aa;
+  letter-spacing: 0.02em;
+}
+
+.whitepaper-code-window pre {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 1.25rem !important;
+  background-color: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════
+   Tablas Desplegables con <details> y <summary>
+   ═══════════════════════════════════════════════ */
+.whitepaper-accordion {
+  margin: 1.75rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  background-color: rgba(18, 18, 21, 0.6);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.whitepaper-accordion:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.whitepaper-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: #fafafa;
+  background-color: #121215;
+  transition: background-color 0.15s ease;
+  list-style: none;
+}
+
+.whitepaper-summary::-webkit-details-marker {
+  display: none;
+}
+
+.whitepaper-summary:hover {
+  background-color: #18181d;
+}
+
+.whitepaper-accordion-content {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.whitepaper-accordion-content table {
+  margin: 0.5rem 0 !important;
+}
+
+@media print {
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+  }
+
+  nav {
+    display: none !important;
+  }
 }

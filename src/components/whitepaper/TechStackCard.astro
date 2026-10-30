@@ -1,0 +1,91 @@
+---
+interface Props {
+  stack?: {
+    frontend?: string[];
+    backend?: string[];
+    database?: string[];
+    devops?: string[];
+  };
+}
+
+const { stack } = Astro.props;
+---
+
+<div class="rounded-2xl border border-white/10 bg-[#121215] p-4 space-y-3">
+  <span
+    class="font-mono text-[11px] uppercase tracking-wider text-neutral-400 font-medium block border-b border-white/5 pb-2"
+    style={`font-family: var(--font-mono)`}
+  >
+    STACK POR CAPAS
+  </span>
+
+  <div class="space-y-2.5 text-xs">
+    {
+      stack?.backend && stack.backend.length > 0 && (
+        <div>
+          <span class="text-[10px] font-mono text-emerald-400 uppercase tracking-wide block mb-1">
+            Backend & Core
+          </span>
+          <div class="flex flex-wrap gap-1">
+            {stack.backend.map((t) => (
+              <span class="bg-neutral-900/80 border border-white/5 text-neutral-300 font-mono text-[10px] px-2 py-0.5 rounded">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    {
+      stack?.frontend && stack.frontend.length > 0 && (
+        <div>
+          <span class="text-[10px] font-mono text-sky-400 uppercase tracking-wide block mb-1">
+            Frontend & Estado
+          </span>
+          <div class="flex flex-wrap gap-1">
+            {stack.frontend.map((t) => (
+              <span class="bg-neutral-900/80 border border-white/5 text-neutral-300 font-mono text-[10px] px-2 py-0.5 rounded">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    {
+      stack?.database && stack.database.length > 0 && (
+        <div>
+          <span class="text-[10px] font-mono text-indigo-400 uppercase tracking-wide block mb-1">
+            Persistencia
+          </span>
+          <div class="flex flex-wrap gap-1">
+            {stack.database.map((t) => (
+              <span class="bg-neutral-900/80 border border-white/5 text-neutral-300 font-mono text-[10px] px-2 py-0.5 rounded">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    {
+      stack?.devops && stack.devops.length > 0 && (
+        <div>
+          <span class="text-[10px] font-mono text-amber-400 uppercase tracking-wide block mb-1">
+            Infraestructura & Edge
+          </span>
+          <div class="flex flex-wrap gap-1">
+            {stack.devops.map((t) => (
+              <span class="bg-neutral-900/80 border border-white/5 text-neutral-300 font-mono text-[10px] px-2 py-0.5 rounded">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  </div>
+</div>

@@ -1,0 +1,50 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+interface Props {
+  prev: CollectionEntry<"projects"> | null;
+  next: CollectionEntry<"projects"> | null;
+}
+
+const { prev, next } = Astro.props;
+---
+
+<nav aria-label="Navegación entre proyectos" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-12 border-t border-white/10 mt-16">
+  {prev ? (
+    <a
+      href={`/projects/${prev.id}`}
+      class="group rounded-2xl border border-white/10 bg-[#121215] p-5 hover:border-white/20 transition-all flex flex-col gap-1 text-left"
+    >
+      <span class="text-[10px] font-mono text-neutral-500 uppercase tracking-wider" style={`font-family: var(--font-mono)`}>
+        ← CASO ANTERIOR
+      </span>
+      <span class="font-bold text-white text-base group-hover:text-emerald-400 transition-colors">
+        {prev.data.title}
+      </span>
+      <span class="text-xs text-neutral-400 line-clamp-1">
+        {prev.data.tagline}
+      </span>
+    </a>
+  ) : (
+    <div class="hidden sm:block"></div>
+  )}
+
+  {next ? (
+    <a
+      href={`/projects/${next.id}`}
+      class="group rounded-2xl border border-white/10 bg-[#121215] p-5 hover:border-white/20 transition-all flex flex-col gap-1 text-left sm:text-right"
+    >
+      <span class="text-[10px] font-mono text-neutral-500 uppercase tracking-wider" style={`font-family: var(--font-mono)`}>
+        SIGUIENTE CASO →
+      </span>
+      <span class="font-bold text-white text-base group-hover:text-emerald-400 transition-colors">
+        {next.data.title}
+      </span>
+      <span class="text-xs text-neutral-400 line-clamp-1">
+        {next.data.tagline}
+      </span>
+    </a>
+  ) : (
+    <div class="hidden sm:block"></div>
+  )}
+</nav>
