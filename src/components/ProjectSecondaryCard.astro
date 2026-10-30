@@ -9,7 +9,10 @@ interface Props {
 const { project, index = 2 } = Astro.props;
 const { data } = project;
 
-// Aplanar stack para chips
+// Métricas cuantitativas clave para escaneo rápido (primeras 2 métricas del proyecto)
+const keyMetrics = data.heroMetrics.slice(0, 2);
+
+// Aplanar stack a partir de los metadatos del proyecto (limpio de versiones desde el MDX)
 const allStackTags = [
   ...data.stack.backend,
   ...data.stack.frontend,
@@ -17,12 +20,12 @@ const allStackTags = [
   ...data.stack.devops,
 ];
 
-// Índice numérico formateado (02, 03, ...)
-const watermark = String(index).padStart(2, "0");
+// Índice numérico formateado a partir de data.order o prop index (02, 03, ...)
+const watermark = String(data.order ?? index ?? 2).padStart(2, "0");
 ---
 
 <article
-  class="scroll-reveal rounded-2xl border border-white/10 bg-[#121215] hover:border-white/20 transition-all duration-300 p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative overflow-hidden"
+  class="scroll-reveal rounded-2xl border border-white/10 bg-[#121215] hover:border-white/20 transition-all duration-300 p-6 sm:p-8 flex flex-col gap-5 relative overflow-hidden"
 >
   <!-- Marca de agua numérica -->
   <span
@@ -33,180 +36,91 @@ const watermark = String(index).padStart(2, "0");
     {watermark}
   </span>
 
-  <!-- ── Columna Izquierda: Panel Visual de Arquitectura y Pipeline ETL (5 cols) ── -->
-  <div class="lg:col-span-5 flex flex-col gap-3 relative z-10">
-    <div class="rounded-xl overflow-hidden border border-white/8 bg-neutral-950">
-      <!-- Barra superior de consola -->
-      <div class="flex items-center gap-1.5 px-3 py-2.5 bg-neutral-900/80 border-b border-white/5">
-        <span class="h-2.5 w-2.5 rounded-full bg-red-500/70"></span>
-        <span class="h-2.5 w-2.5 rounded-full bg-yellow-500/70"></span>
-        <span class="h-2.5 w-2.5 rounded-full bg-green-500/70"></span>
-        <span
-          class="ml-3 font-mono text-[10px] text-neutral-600 tracking-wide"
-          style={`font-family: var(--font-mono)`}
-        >
-          {project.id}.engine — cpanel/wsgi
-        </span>
-      </div>
-
-      <!-- Diagrama de Flujo ETL & Snapshot en terminal -->
-      <div class="p-4 bg-neutral-950 flex flex-col gap-3 text-xs font-mono" style={`font-family: var(--font-mono)`}>
-        <div class="flex items-center justify-between text-neutral-500 border-b border-white/5 pb-2">
-          <span class="text-emerald-400 font-medium">● PIPELINE MIGRACIÓN</span>
-          <span class="text-[10px] text-neutral-400">+7.000 ROWS</span>
-        </div>
-
-        <div class="space-y-1.5 text-[11px]">
-          <div class="flex items-center gap-2 text-neutral-400">
-            <span class="text-amber-400">01. INGEST:</span>
-            <span>Excel Hojas Descentralizadas</span>
-          </div>
-          <div class="flex items-center gap-2 text-neutral-400">
-            <span class="text-sky-400">02. SANITIZE:</span>
-            <span>Pydantic v2 RIF/Regex Cleaning</span>
-          </div>
-          <div class="flex items-center gap-2 text-neutral-400">
-            <span class="text-indigo-400">03. STORE:</span>
-            <span>JSON Inmutable + 3NF Tables</span>
-          </div>
-          <div class="flex items-center gap-2 text-neutral-300 font-medium pt-1 border-t border-white/5">
-            <span class="text-emerald-400">04. LOCKING:</span>
-            <span>.with_for_update() en Secuencias</span>
-          </div>
-        </div>
-
-        <!-- Métrica destacada -->
-        <div class="pt-2 border-t border-white/5 flex items-center justify-between text-neutral-400">
-          <span class="text-[10px] uppercase text-neutral-500">Uptime verificado</span>
-          <span class="text-xs text-white font-bold">+6 Meses (cPanel)</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Badges de entorno de despliegue -->
-    <div class="flex flex-wrap gap-2">
-      <span
-        class="inline-flex items-center gap-1.5 rounded-md border border-white/8 bg-neutral-900/60 px-2.5 py-1 font-mono text-[10px] text-neutral-400 tracking-wide"
-        style={`font-family: var(--font-mono)`}
-      >
-        <span class="h-1.5 w-1.5 rounded-full bg-amber-400/80"></span>
-        CPANEL / PASSENGER (WSGI)
-      </span>
-      <span
-        class="inline-flex items-center gap-1.5 rounded-md border border-white/8 bg-neutral-900/60 px-2.5 py-1 font-mono text-[10px] text-neutral-400 tracking-wide"
-        style={`font-family: var(--font-mono)`}
-      >
-        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400/80"></span>
-        SQLITE (DELETE MODE)
-      </span>
-    </div>
-  </div>
-
-  <!-- ── Columna Derecha: Ficha Técnica (7 cols) ── -->
-  <div class="lg:col-span-7 flex flex-col gap-5 relative z-10">
-    <!-- Badge de categoría + timeframe -->
+  <!-- ── 1. HEADER: Categoría · Timeframe · Badge Estado ── -->
+  <div class="flex flex-wrap items-center justify-between gap-3 relative z-10 border-b border-white/5 pb-4">
     <div
-      class="font-mono text-xs text-emerald-400 tracking-wider uppercase"
+      class="font-mono text-xs text-emerald-400 tracking-wider uppercase flex items-center gap-2"
       style={`font-family: var(--font-mono)`}
     >
-      ERP AUTOMOTRIZ &amp; ETL&nbsp;·&nbsp;{data.timeframe}
+      {data.category && <span>{data.category}</span>}
+      {data.category && data.timeframe && <span class="text-neutral-600">·</span>}
+      <span class="text-neutral-400">{data.timeframe}</span>
     </div>
 
-    <!-- Título y Tagline -->
-    <div class="-mt-1">
-      <h3
-        transition:name={`project-title-${project.id}`}
-        class="text-2xl sm:text-3xl font-bold text-white leading-snug"
-      >
-        {data.title}
-      </h3>
-      <p class="mt-2 text-sm text-neutral-300 leading-relaxed">
-        {data.tagline}
-      </p>
-    </div>
+    {
+      data.productionStatus && (
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[11px] text-emerald-400 font-medium tracking-wide"
+          style={`font-family: var(--font-mono)`}
+        >
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          {data.productionStatus.toUpperCase()}
+        </span>
+      )
+    }
+  </div>
 
-    <!-- Grid de Métricas 2x2 con detalle -->
-    <div class="grid grid-cols-2 gap-2.5">
-      {
-        data.heroMetrics.map((metric) => (
-          <div class="bg-neutral-900/60 border border-white/5 rounded-lg p-3 flex flex-col gap-1.5">
-            <span class="text-xl font-bold text-white tabular-nums leading-none" style={`font-family: var(--font-mono)`}>
-              {metric.value}
-            </span>
-            <span class="text-xs font-medium text-neutral-300 leading-tight">
-              {metric.label}
-            </span>
-            <span
-              class="text-xs text-neutral-400 leading-relaxed pt-0.5"
-              style={`font-family: var(--font-mono)`}
-            >
-              {metric.detail}
-            </span>
-          </div>
-        ))
-      }
-    </div>
+  <!-- ── 2. IDENTIDAD & IMPACTO: Título (ClientRouter) + Tagline ── -->
+  <div class="relative z-10 space-y-2">
+    <h3
+      transition:name={`project-title-${project.id}`}
+      class="text-2xl sm:text-3xl font-bold text-white leading-snug"
+    >
+      {data.title}
+    </h3>
+    <p class="text-sm text-neutral-300 leading-relaxed max-w-3xl">
+      {data.tagline}
+    </p>
+  </div>
 
-    <!-- Viñetas técnicas -->
-    <ul class="flex flex-col gap-2">
-      <li class="flex items-start gap-2.5 text-sm text-neutral-300">
-        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
-        <span>
-          <strong class="text-white font-medium">Arquitectura: </strong>
-          {data.architecture.pattern}
-        </span>
-      </li>
-      <li class="flex items-start gap-2.5 text-sm text-neutral-300">
-        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
-        <span>
-          <strong class="text-white font-medium">Persistencia: </strong>
-          {data.architecture.databaseSchema}
-        </span>
-      </li>
-      <li class="flex items-start gap-2.5 text-sm text-neutral-300">
-        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
-        <span>
-          <strong class="text-white font-medium">SDD scope: </strong>
-          {data.methodologies.sddScope}
-        </span>
-      </li>
-      <li class="flex items-start gap-2.5 text-sm text-neutral-300">
-        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
-        <span>
-          <strong class="text-white font-medium">Suite de auditoría: </strong>
-          {data.methodologies.testCount.total} scripts de integridad — {data.methodologies.testingFrameworks.join(", ")}
-        </span>
-      </li>
-    </ul>
-
-    <!-- Chips del stack -->
-    <div class="flex flex-wrap gap-1.5">
-      {
-        allStackTags.map((tag) => (
+  <!-- ── 3. BLOQUE DE VALIDACIÓN CUANTITATIVA (2 Métricas Clave) ── -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
+    {
+      keyMetrics.map((metric) => (
+        <div class="bg-neutral-900/60 border border-white/5 rounded-lg p-3.5 flex flex-col gap-1">
           <span
-            class="bg-white/5 text-neutral-300 text-xs px-2.5 py-1 rounded-md font-mono hover:bg-white/10 hover:border-white/20 border border-white/5 transition-colors duration-150"
+            class="text-xl sm:text-2xl font-bold text-white tabular-nums tracking-tight"
             style={`font-family: var(--font-mono)`}
           >
-            {tag}
+            {metric.value}
           </span>
-        ))
-      }
-    </div>
+          <span class="text-xs font-medium text-neutral-400">
+            {metric.label}
+          </span>
+        </div>
+      ))
+    }
+  </div>
 
-    <!-- CTA & Enlaces con Spotlight GitHub -->
-    <div class="pt-2 flex flex-wrap items-center gap-4">
-      <a
-        href={`/projects/${project.id}`}
-        class="inline-flex items-center gap-1.5 text-sm font-medium text-white hover:text-emerald-400 transition-colors duration-150 group"
-      >
-        Ver Especificación Técnica
+  <!-- ── 4. STACK ESENCIAL (Chips Limpios) ── -->
+  <div class="flex flex-wrap gap-1.5 pt-1 relative z-10">
+    {
+      allStackTags.map((tech) => (
         <span
-          class="transition-transform duration-150 group-hover:translate-x-0.5"
-          aria-hidden="true">→</span
+          class="bg-white/5 text-neutral-300 text-xs px-2.5 py-1 rounded-md font-mono hover:bg-white/10 hover:border-white/20 border border-white/5 transition-colors duration-150"
+          style={`font-family: var(--font-mono)`}
         >
-      </a>
+          {tech}
+        </span>
+      ))
+    }
+  </div>
 
-      {project.data.links?.repo && (
+  <!-- ── 5. BARRA DE ACCIÓN: CTA & Enlaces con Spotlight ── -->
+  <div class="pt-2 flex flex-wrap items-center gap-4 relative z-10">
+    <a
+      href={`/projects/${project.id}`}
+      class="inline-flex items-center gap-1.5 text-sm font-medium text-white hover:text-emerald-400 transition-colors duration-150 group"
+    >
+      Ver Especificación Técnica
+      <span
+        class="transition-transform duration-150 group-hover:translate-x-0.5"
+        aria-hidden="true">→</span
+      >
+    </a>
+
+    {
+      project.data.links?.repo && (
         <a
           href={project.data.links.repo}
           target="_blank"
@@ -214,7 +128,8 @@ const watermark = String(index).padStart(2, "0");
           class="group relative inline-flex items-center gap-2 overflow-visible rounded-lg border border-white/10 bg-[#121215] px-3.5 py-1.5 font-mono text-xs text-neutral-300 transition-all duration-300 hover:border-white/30 hover:bg-neutral-900 hover:text-white"
           aria-label={`Ver código fuente de ${project.data.title} en GitHub`}
         >
-          <div 
+          <!-- Cono de Luz Cenital (Spotlight adaptado) -->
+          <div
             class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 h-8 w-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             aria-hidden="true"
           >
@@ -222,9 +137,9 @@ const watermark = String(index).padStart(2, "0");
             <div class="h-full w-full [clip-path:polygon(50%_0%,0%_100%,100%_100%)] bg-gradient-to-b from-white/25 via-white/5 to-transparent"></div>
           </div>
 
-          <svg 
-            class="relative z-10 h-3.5 w-3.5 fill-current text-neutral-400 transition-colors duration-200 group-hover:text-white" 
-            viewBox="0 0 24 24" 
+          <svg
+            class="relative z-10 h-3.5 w-3.5 fill-current text-neutral-400 transition-colors duration-200 group-hover:text-white"
+            viewBox="0 0 24 24"
             aria-hidden="true"
           >
             <path d="M12 0.297C5.37 0.297 0 5.67 0 12.297c0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297 24 5.67 18.627 0.297 12 0.297z" />
@@ -233,7 +148,7 @@ const watermark = String(index).padStart(2, "0");
           <span class="relative z-10 font-medium tracking-wide">Repositorio</span>
           <span class="relative z-10 text-neutral-500 transition-colors group-hover:text-neutral-300">↗</span>
         </a>
-      )}
-    </div>
+      )
+    }
   </div>
 </article>
