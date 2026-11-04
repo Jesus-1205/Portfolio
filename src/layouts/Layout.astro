@@ -9,14 +9,17 @@ import { ClientRouter } from "astro:transitions";
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
 }
 
 const {
   title = "Jesús Blanco | Full-Stack Software Developer",
   description = "Full-Stack Software Developer specializing in transactional systems, database optimization, and production-grade deployments with Python, TypeScript, and modern web technologies.",
+  image = "/og-image.png",
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? "https://jesus-blanco.pages.dev");
+const ogImageURL = new URL(image, Astro.site ?? "https://jesus-blanco.pages.dev");
 ---
 
 <!doctype html>
@@ -33,14 +36,20 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? "https://jesus-bl
 
     <!-- OpenGraph / LinkedIn / WhatsApp -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:locale" content="es_ES" />
 
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalURL} />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
 
     <title>{title}</title>
 
